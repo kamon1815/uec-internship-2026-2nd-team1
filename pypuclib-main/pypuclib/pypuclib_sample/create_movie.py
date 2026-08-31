@@ -4,6 +4,11 @@ import threading
 import pypuclib
 from pypuclib import CameraFactory, Camera, XferData, Decoder
 
+import static_ffmpeg
+import ffmpeg
+
+static_ffmpeg.add_paths()
+
 BASE_DIR = Path(__file__).resolve().parent
 
 # define max decode thread
@@ -19,16 +24,12 @@ decoder = cam.decoder()
 
 # setup save video file
 path = BASE_DIR / "create_movie.mp4"
-path_str = str(path).replace("\\", "/")
 width = 1246
 height = 1008
 SAVE_FRAME_COUNT = 10000
 fps = 60
-gst_pipeline = (
-    f"appsrc ! videoconvert ! qsvh264enc bitrate=8000 ! "
-    f"h264parse ! mp4mux ! filesink location=\"{path_str}\""
-)
-video = cv2.VideoWriter()
+
+ffmpeg_process = None
 
 # global variable
 b_show = True      # UI flag
@@ -54,18 +55,22 @@ def callback(data):
     global b_show
     global g_oldSeqNo
     global g_currentSeqNo
+    global ffmpeg_process
 
     if g_count >= SAVE_FRAME_COUNT:
-        video.release()
+        if ffmpeg_process is not None:
+            ffmpeg_process.stdin.close()
+            ffmpeg_process.wait()
+            ffmpeg_process = None
         g_count = 0
         b_show = True
 
-    if video.isOpened():
+    if ffmpeg_process is not None:
         src = decoder.decode(data, 0, 0, width, height)
         g_currentSeqNo = data.sequenceNo()
 
         if g_currentSeqNo != g_oldSeqNo:
-            video.write(src)
+            ffmpeg_process.stdin.write(src.tobytes())
             g_count += 1
             g_oldSeqNo = g_currentSeqNo
 
@@ -96,11 +101,23 @@ while True:
 
     elif key & 0xFF == ord('s'): # press 's' to save avi
         b_show = False
-        if video.isOpened() == False:
-            video.open(gst_pipeline, cv2.CAP_GSTREAMER, 0, fps, (width, height), False)
+        if ffmpeg_process is None:
+            pix_fmt = 'gray' if len(img.shape) == 2 else 'bgr24'
+
+            ffmpeg_process = (
+                ffmpeg
+                .input('pipe:', format='rawvideo', pix_fmt=pix_fmt, s=f'{width}x{height}', r=fps)
+                .output(str(path), vcodec='h264_qsv', b='8000k')
+                .overwrite_output()
+                .run_async(pipe_stdin=True)
+            )
 
 
 # end transfer     
+if ffmpeg_process is not None:
+    ffmpeg_process.stdin.close()
+    ffmpeg_process.wait()
+
 cam.endXfer()
 
 print("end")

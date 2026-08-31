@@ -34,6 +34,12 @@ pip installもしくはpy -m pip installで必要なライブラリをインス�
   pip install pillow
   ```
 
+・ffmpeg(動画の処理に特化したライブラリ)
+
+  ```
+  pip install static-ffmpeg ffmpeg-python
+  ```
+
 ・OpenVINO(Intel製ハードウェアでAI処理を高速化する推論エンジン)
   ```
   pip install openvino
