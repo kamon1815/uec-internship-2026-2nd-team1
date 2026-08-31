@@ -33,5 +33,4 @@
 *.onnx
 
 cache/
-onnx/
 ddcolor_sample/output/
