@@ -18,12 +18,16 @@ cam = CameraFactory().create()
 decoder = cam.decoder()
 
 # setup save video file
-path = BASE_DIR / "create_movie.avi"
-width = 512
-height = 512
+path = BASE_DIR / "create_movie.mp4"
+path_str = str(path).replace("\\", "/")
+width = 1246
+height = 1008
 SAVE_FRAME_COUNT = 10000
 fps = 60
-codec = cv2.VideoWriter_fourcc(*'MJPG') # codec type of avi file 
+gst_pipeline = (
+    f"appsrc ! videoconvert ! qsvh264enc bitrate=8000 ! "
+    f"h264parse ! mp4mux ! filesink location=\"{path_str}\""
+)
 video = cv2.VideoWriter()
 
 # global variable
@@ -55,10 +59,9 @@ def callback(data):
         video.release()
         g_count = 0
         b_show = True
-        print("録画完了")
 
     if video.isOpened():
-        src = decoder.decode(data, 0, 0, 512, 512)
+        src = decoder.decode(data, 0, 0, width, height)
         g_currentSeqNo = data.sequenceNo()
 
         if g_currentSeqNo != g_oldSeqNo:
@@ -66,7 +69,7 @@ def callback(data):
             g_count += 1
             g_oldSeqNo = g_currentSeqNo
 
- # begin transfer
+# begin transfer
 cam.beginXfer(callback)
 
 while True:
@@ -94,13 +97,13 @@ while True:
     elif key & 0xFF == ord('s'): # press 's' to save avi
         b_show = False
         if video.isOpened() == False:
-            video.open(path, codec, fps, (width, height), False)
+            video.open(gst_pipeline, cv2.CAP_GSTREAMER, 0, fps, (width, height), False)
 
 
- # end transfer     
+# end transfer     
 cam.endXfer()
 
 print("end")
 
- # Close live image window
+# Close live image window
 cv2.destroyAllWindows()
