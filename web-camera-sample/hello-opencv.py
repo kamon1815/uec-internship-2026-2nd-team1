@@ -1,7 +1,9 @@
 import cv2 # need to import extra module "pip install opencv-python"
+from pathlib import Path
 
 # 画像読み込み
-path = "C:\\Users\\photron\\work\\webcamera-sample\\img\\infinicam.png"
+BASE_DIR = Path(__file__).resolve().parent
+path = BASE_DIR / "img/infinicam.png"
 img = cv2.imread(path)
 
 # # テキスト描画

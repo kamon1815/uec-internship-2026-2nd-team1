@@ -1,4 +1,4 @@
-import cv2 # need to import extra module "pip install opencv-python"
+import cv2 # pip install opencv-python"
 
 cap = cv2.VideoCapture(0)
 
