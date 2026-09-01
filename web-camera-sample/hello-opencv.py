@@ -7,14 +7,14 @@ path = BASE_DIR / "img/infinicam.png"
 img = cv2.imread(path)
 
 # # テキスト描画
-# cv2.putText(img,
-#             "Hello Python",
-#             org=(200, 50),
-#             fontFace=cv2.FONT_HERSHEY_DUPLEX,
-#             fontScale=1.5,
-#             color=(0, 255, 0),
-#             thickness=2,
-#             lineType=cv2.LINE_AA)
+cv2.putText(img,
+            "CPK!",
+            org=(200, 50),
+            fontFace=cv2.FONT_HERSHEY_DUPLEX,
+            fontScale=1.5,
+            color=(0, 255, 0),
+            thickness=2,
+            lineType=cv2.LINE_AA)
 
 # # リサイズ
 # img = cv2.resize(img, dsize=(50, 50))
