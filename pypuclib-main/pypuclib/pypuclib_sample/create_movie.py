@@ -1,7 +1,6 @@
 import time
 from pathlib import Path
 import cv2 # need to import extra module "pip install opencv-python"
-import threading
 import pypuclib
 from pypuclib import CameraFactory, Camera, XferData, Decoder
 
@@ -19,22 +18,24 @@ print(pypuclib.__doc__)
 
 # To connect the camera first detected
 cam = CameraFactory().create()
+cam.setFramerateShutter(320, 320)
 
 # To decode image, get decoder obj from camera
 decoder = cam.decoder()
 
 # setup save video file
 path = BASE_DIR / "create_movie.mp4"
-vcodec = "h264"
+vcodec = "h264_qsv"
 width = 1246
 height = 1008
-SAVE_FRAME_COUNT = 3600
+MAX_SAVE_FRAME_COUNT = 10000
 fps = 60
 
 ffmpeg_process = None
 
 # global variable
-b_show = True      # UI flag
+is_recording = False
+stop_requested = False
 g_count = 0         # counter of save frames
 g_oldSeqNo = 0 
 g_currentSeqNo = 0
@@ -42,7 +43,7 @@ start_time = 0.0
 
 # Explanation
 print("press Esc to quit this application ")
-print("press 's' to save a AVI file")
+print("press 's' to start/stop saving a mp4 file")
 
 # at first, set multi decode thread
 while(1):
@@ -55,22 +56,13 @@ while(1):
 # callback function in transfer
 def callback(data):
     global g_count
-    global b_show
+    global is_recording
+    global stop_requested
     global g_oldSeqNo
     global g_currentSeqNo
     global ffmpeg_process
     global start_time
     global vcodec
-
-    if g_count >= SAVE_FRAME_COUNT:
-        if ffmpeg_process is not None:
-            ffmpeg_process.stdin.close()
-            ffmpeg_process.wait()
-            ffmpeg_process = None
-            elapsed_time = time.time() - start_time
-            print(f"Encode time (" + str(vcodec) + "): " + f"{elapsed_time:.2f} sec")
-        g_count = 0
-        b_show = True
 
     if ffmpeg_process is not None:
         src = decoder.decode(data, 0, 0, width, height)
@@ -81,24 +73,35 @@ def callback(data):
             g_count += 1
             g_oldSeqNo = g_currentSeqNo
 
+        if g_count >= MAX_SAVE_FRAME_COUNT or stop_requested:
+            ffmpeg_process.stdin.close()
+            ffmpeg_process.wait()
+            ffmpeg_process = None
+            elapsed_time = time.time() - start_time
+            print(f"Encode Profile (" + str(vcodec) + "): " + f"Encode time: {elapsed_time:.2f} sec /" + f" Encode Frames: {g_count} frames /" + f" Encode AVG FPS: {g_count/elapsed_time:.2f} fps")
+            g_count = 0
+            is_recording = False
+            stop_requested = False
+
 # begin transfer
 cam.beginXfer(callback)
 
 while True:
+    # Grab the single image data
+    xferData = cam.grab()
 
-    if b_show == True:
-        # Grab the single image data
-        xferData = cam.grab()
+    # Decode the data can be used as image
+    img = decoder.decode(xferData)
 
-        # Decode the data can be used as image
-        img = decoder.decode(xferData)
+    # get sequence number of transfer data
+    seq = "sequenceNo = " + str(xferData.sequenceNo())
+    cv2.putText(img, seq, (0, 50), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255,255,255), 2, cv2.LINE_AA)
 
-        # get sequence number of transfer data
-        seq = "sequenceNo = " + str(xferData.sequenceNo())
-        cv2.putText(img, seq, (0, 50), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255,255,255), 2, cv2.LINE_AA)
+    if is_recording:
+        rec_str = f"REC: {g_count}/{MAX_SAVE_FRAME_COUNT}"
+        cv2.putText(img, rec_str, (0, 100), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255,255,255), 2, cv2.LINE_AA)
 
-        # Show the image
-        cv2.imshow("INFINICAM", img)
+    cv2.imshow("INFINICAM", img)
 
     # get key what user input
     key = cv2.waitKey(1)
@@ -106,12 +109,12 @@ while True:
     if key & 0xFF == 27: # press Esc to end application 
         break
 
-    elif key & 0xFF == ord('s'): # press 's' to save avi
-        b_show = False
-        if ffmpeg_process is None:
+    elif key & 0xFF == ord('s'): # press 's' to save or stop
+        if not is_recording and ffmpeg_process is None:
             pix_fmt = 'gray' if len(img.shape) == 2 else 'bgr24'
 
             start_time = time.time()
+            stop_requested = False
             ffmpeg_process = (
                 ffmpeg
                 .input('pipe:', format='rawvideo', pix_fmt=pix_fmt, s=f'{width}x{height}', r=fps)
@@ -119,6 +122,9 @@ while True:
                 .overwrite_output()
                 .run_async(pipe_stdin=True)
             )
+            is_recording = True
+        elif is_recording:
+            stop_requested = True
 
 
 # end transfer     
