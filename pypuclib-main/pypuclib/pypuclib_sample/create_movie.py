@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 import cv2 # need to import extra module "pip install opencv-python"
 import threading
@@ -24,9 +25,10 @@ decoder = cam.decoder()
 
 # setup save video file
 path = BASE_DIR / "create_movie.mp4"
+vcodec = "h264_qsv"
 width = 1246
 height = 1008
-SAVE_FRAME_COUNT = 10000
+SAVE_FRAME_COUNT = 1000
 fps = 60
 
 ffmpeg_process = None
@@ -36,6 +38,7 @@ b_show = True      # UI flag
 g_count = 0         # counter of save frames
 g_oldSeqNo = 0 
 g_currentSeqNo = 0
+start_time = 0.0
 
 # Explanation
 print("press Esc to quit this application ")
@@ -56,12 +59,16 @@ def callback(data):
     global g_oldSeqNo
     global g_currentSeqNo
     global ffmpeg_process
+    global start_time
+    global vcodec
 
     if g_count >= SAVE_FRAME_COUNT:
         if ffmpeg_process is not None:
             ffmpeg_process.stdin.close()
             ffmpeg_process.wait()
             ffmpeg_process = None
+            elapsed_time = time.time() - start_time
+            print(f"Encode time (" + str(vcodec) + "): " + f"{elapsed_time:.2f} sec")
         g_count = 0
         b_show = True
 
@@ -104,10 +111,11 @@ while True:
         if ffmpeg_process is None:
             pix_fmt = 'gray' if len(img.shape) == 2 else 'bgr24'
 
+            start_time = time.time()
             ffmpeg_process = (
                 ffmpeg
                 .input('pipe:', format='rawvideo', pix_fmt=pix_fmt, s=f'{width}x{height}', r=fps)
-                .output(str(path), vcodec='h264_qsv', b='8000k')
+                .output(str(path), vcodec=vcodec, b='8000k')
                 .overwrite_output()
                 .run_async(pipe_stdin=True)
             )
@@ -117,6 +125,8 @@ while True:
 if ffmpeg_process is not None:
     ffmpeg_process.stdin.close()
     ffmpeg_process.wait()
+    elapsed_time = time.time() - start_time
+    print(f"Encode time (" + str(vcodec) + "): " + f"{elapsed_time:.2f} sec")
 
 cam.endXfer()
 
