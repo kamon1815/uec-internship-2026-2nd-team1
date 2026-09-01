@@ -25,7 +25,7 @@ decoder = cam.decoder()
 
 # setup save video file
 path = BASE_DIR / "create_movie.mp4"
-vcodec = "h264_qsv"
+vcodec = "h264"
 width = 1246
 height = 1008
 MAX_SAVE_FRAME_COUNT = 10000
@@ -132,7 +132,7 @@ if ffmpeg_process is not None:
     ffmpeg_process.stdin.close()
     ffmpeg_process.wait()
     elapsed_time = time.time() - start_time
-    print(f"Encode time (" + str(vcodec) + "): " + f"{elapsed_time:.2f} sec")
+    print(f"Encode Profile (" + str(vcodec) + "): " + f"Encode time: {elapsed_time:.2f} sec /" + f" Encode Frames: {g_count} frames /" + f" Encode AVG FPS: {g_count/elapsed_time:.2f} fps")
 
 cam.endXfer()
 
