@@ -28,7 +28,7 @@ path = BASE_DIR / "create_movie.mp4"
 vcodec = "h264"
 width = 1246
 height = 1008
-SAVE_FRAME_COUNT = 1000
+SAVE_FRAME_COUNT = 3600
 fps = 60
 
 ffmpeg_process = None
