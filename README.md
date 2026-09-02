@@ -1,4 +1,4 @@
-# uec-internship-2026-2nd-team1
+# uec-internship-2026-2nd-team2
 2026年度電通大インターン向けサンプルコード
 
 ## 概要
@@ -101,12 +101,13 @@ INFINICAMをGUIで制御するサンプルコード。解像度や撮影速度�
 
 * [create_movie.py](pypuclib-main/pypuclib/pypuclib_sample/create_movie.py)
 
-INFINICAMで取得した映像をavi形式で録画する
+INFINICAMで取得した映像をmp4形式で録画する
 1. カメラを接続し、create_movie.pyのスクリプトを実行。
 2. 起動時にデコードスレッド数を問われるので「12」と入力する。
-3. 録画の開始と保存ウィンドウが表示されたら、「s」キーを押して録画を開始。同階層に create_movie.avi が生成される。
+3. ライブ表示のウィンドウが表示されたら、「s」キーを押して録画を開始、画面左上にRECと表示され、再度「s」キーを押すとエンコードを終了。同階層に create_movie.mp4 が生成される。
+4. 通常のCPUエンコードだと重く、ドロップフレームが多発するのでvcodecをh264_qsvに設定するとGPUエンコードが可能になる。GPUエンコードを使用するとほぼドロップせずにリアルタイムエンコードが可能になる。
 
-※ SAVE_FRAME_COUNT で録画枚数を変更可能（容量に注意）。
+※ MAX_SAVE_FRAME_COUNT で最大録画枚数を変更可能。
 
 * [tracking_sample.py](pypuclib-main/pypuclib/pypuclib_sample/tracking_sample.py)
 
