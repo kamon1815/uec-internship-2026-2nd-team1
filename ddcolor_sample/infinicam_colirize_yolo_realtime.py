@@ -7,8 +7,8 @@ from pypuclib import CameraFactory, GPUSetup
 
 # 推論を行うデバイス、モデルのパス設定
 BASE_DIR = Path(__file__).resolve().parent
-COLOR_MODE = "npu_fp16"                        # DDColor を動かすハード
-YOLO_MODE = "gpu_fp16"                         # YOLO を動かすハード
+COLOR_MODE = "gpu_fp16"                        # DDColor を動かすハード
+YOLO_MODE = "cpu_fp32"                         # YOLO を動かすハード
 #   どちらも cpu_fp32 / gpu_fp32 / gpu_fp16 / npu_fp16 から選ぶ
 
 COLOR_MODEL = BASE_DIR / "../onnx/ddcolor_512.onnx"

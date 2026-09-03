@@ -25,7 +25,7 @@ decoder = cam.decoder()
 
 # setup save video file
 path = BASE_DIR / "create_movie.mp4"
-vcodec = "h264"
+vcodec = "h264_qsv"
 width = 1246
 height = 1008
 SAVE_FRAME_COUNT = 1000

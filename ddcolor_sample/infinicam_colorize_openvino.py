@@ -6,7 +6,7 @@ from pathlib import Path
 from pypuclib import CameraFactory, GPUSetup
 
 BASE_DIR = Path(__file__).resolve().parent
-MODE = "cpu_fp32"                              # cpu_fp32 / gpu_fp32 / gpu_fp16 / npu_fp16
+MODE = "gpu_fp16"                              # cpu_fp32 / gpu_fp32 / gpu_fp16 / npu_fp16
 MODEL = BASE_DIR / "../onnx/ddcolor_512.onnx"
 SAVE_PATH = BASE_DIR / "output/colorized.bmp"                    # sキーで保存する先
 

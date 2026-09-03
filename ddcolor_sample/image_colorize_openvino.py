@@ -7,9 +7,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 
 # 設定
-MODE = "cpu_fp32"                              # cpu_fp32 / gpu_fp32 / gpu_fp16 / npu_fp16
+MODE = "gpu_fp16"                              # cpu_fp32 / gpu_fp32 / gpu_fp16 / npu_fp16
 MODEL = BASE_DIR / "../onnx/ddcolor_512.onnx"
-INPUT = BASE_DIR / "image/image.jpg"
+INPUT = BASE_DIR / "image/building.jpg"
 OUTPUT = BASE_DIR / f"output/result_{MODE}.png"
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
