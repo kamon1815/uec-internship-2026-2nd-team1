@@ -8,7 +8,7 @@ img = cv2.imread(path)
 
 # # テキスト描画
 cv2.putText(img,
-            "kk_test",
+            "Hello AK",
             org=(200, 50),
             fontFace=cv2.FONT_HERSHEY_DUPLEX,
             fontScale=1.5,
