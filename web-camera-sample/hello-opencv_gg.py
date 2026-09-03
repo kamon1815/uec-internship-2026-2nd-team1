@@ -8,7 +8,7 @@ img = cv2.imread(path)
 
 # テキスト描画
 cv2.putText(img,
-            "こんにちわ",
+            "我那覇雄太",
              org=(200, 50),
              fontFace=cv2.FONT_HERSHEY_DUPLEX,
              fontScale=1.5,
@@ -17,7 +17,7 @@ cv2.putText(img,
              lineType=cv2.LINE_AA)
 
  # リサイズ
-img = cv2.resize(img, dsize=(50, 50))
+#img = cv2.resize(img, dsize=(50, 50))
 
 # 画像表示
 cv2.imshow('test', img)
