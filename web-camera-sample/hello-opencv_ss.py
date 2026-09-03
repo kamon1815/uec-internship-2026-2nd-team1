@@ -11,9 +11,9 @@ cv2.putText(img,
             "Hello Python",
             org=(200, 50),
             fontFace=cv2.FONT_HERSHEY_DUPLEX,
-            fontScale=1.5,
+            fontScale=2,
             color=(0, 255, 0),
-            thickness=2,
+            thickness=3,
             lineType=cv2.LINE_AA)
 
 # # リサイズ
