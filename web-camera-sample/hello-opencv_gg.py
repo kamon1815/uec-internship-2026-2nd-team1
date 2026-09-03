@@ -12,12 +12,12 @@ cv2.putText(img,
              org=(200, 50),
              fontFace=cv2.FONT_HERSHEY_DUPLEX,
              fontScale=1.5,
-             color=(0, 255, 0),
+             color=(255, 0, 0),
              thickness=2,
              lineType=cv2.LINE_AA)
 
  # リサイズ
-img = cv2.resize(img, dsize=(50, 50))
+#img = cv2.resize(img, dsize=(50, 50))
 
 # 画像表示
 cv2.imshow('test', img)
