@@ -49,7 +49,7 @@ class Output:
         self.process.stdin.close()
         self.process.wait()
 
-INPUT_FILE  = './faster_capture/output/infinicam_coin_toss_meetingroom_500yen_1000fps.npy'
+INPUT_FILE  = './faster_capture/output/infinicam_coin_toss_meetingroom_10yen_1000fps.npy'
 OUTPUT_FILE = './coin_recognition/output/coin_recognition.mp4'
 
 def main():
@@ -107,15 +107,20 @@ def main():
         if np.min(np.diff(t[selected])) < 0.05:
             continue
 
+        # 選んだ3点から放物線軌道を作成
         cx = np.polyfit(t[selected], points_x[selected], 2)
-        cy = np.polyfit(t[selected], points_y[selected], 1)  # 選んだ3点から放物線軌道を作成
+        cy = np.polyfit(t[selected], points_y[selected], 1)
 
+        # x方向の加速度が小さいものは除外
         if cx[0] >= -2*video.width:
             continue
 
+        # 時間ごとの予測位置
         predicted_x = np.polyval(cx, t)
-        predicted_y = np.polyval(cy, t)  # 時間ごとの予測位置
-        distance = np.hypot(predicted_x - points_x, predicted_y - points_y)  # 誤差検出
+        predicted_y = np.polyval(cy, t) 
+
+        # 誤差
+        distance = np.hypot(predicted_x - points_x, predicted_y - points_y)
 
         # 予測軌道との差が一定値以下のものの個数を数える(但し1フレームにつきpointは最大1つまで)
         candidates = np.flatnonzero(distance < 14)
@@ -140,11 +145,6 @@ def main():
 
         output.write_frame(frame_show)
 
-
-
-
-
-        
 
 
     # interval = 10
