@@ -7,10 +7,15 @@ BASE_DIR = Path(__file__).resolve().parent
 
 clahe = cv2.createCLAHE(clipLimit = 5.0, tileGridSize = (8, 8))
 
+feature_params = dict(maxCorners = 2,
+                      qualityLevel = 0.01,
+                      minDistance = 10,
+                      blockSize = 7)
+
 subpix_criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 0.001)
 
 lk_params = dict(winSize = (21, 21),
-                 maxLevel = 4,
+                 maxLevel = 3,
                  criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
 points = []
@@ -53,17 +58,28 @@ while selecting_points:
     elif key == ord('r'): # rでリセット
         points = []
     elif key == ord('s'): # sで開始
-        if len(points) > 0:
+        if len(points) == 2: # 2点選択してあると、それらを追跡
             p0 = np.array(points, dtype = np.float32).reshape(-1, 1, 2)
+            selecting_points = False
+        else: # それ以外の場合は範囲選択に移る
+            roi = cv2.selectROI('Select Target Area', img, showCrosshair = True, fromCenter = False)
+            x, y, w, h = map(int, roi)
+            mask_roi = np.zeros_like(gray_i)
+            mask_roi[y : y + h, x : x + w] = 255
+            p0 = cv2.goodFeaturesToTrack(gray_i, mask = mask_roi, **feature_params)
             selecting_points = False
 
 if p0 is not None:
-    p0 = cv2.cornerSubPix(gray_i, p0, (5, 5), (-1, -1), subpix_criteria)
+    p0 = cv2.cornerSubPix(gray_i, p0, (7, 7), (-1, -1), subpix_criteria)
 
 mask = np.zeros_like(img)
 
 number_p = len(p0)
 color = np.random.randint(0, 255, (number_p, 3))
+
+count = 0
+prev_dist = None
+trend = -1
 
 # 特徴点の追跡処理    
 for i in range(800, 1400):
@@ -76,24 +92,51 @@ for i in range(800, 1400):
     gray_i = process_img(img)
     gray_ni = process_img(next_img)
 
-    p1, status, err = cv2.calcOpticalFlowPyrLK(gray_i, gray_ni, p0, None, **lk_params)
+    p1, status_f, err = cv2.calcOpticalFlowPyrLK(gray_i, gray_ni, p0, None, **lk_params)
 
     if p1 is not None:
-        good_new = p1[status == 1]
+        p0_b, status_b, err = cv2.calcOpticalFlowPyrLK(gray_ni, gray_i, p1, None, **lk_params)
+        fb_diff = p0 - p0_b
+        p1_opt = p1 + 0.5 * fb_diff
+
+        status = (status_f.ravel() == 1) & (status_b.ravel() == 1) 
+        good_new = p1_opt[status == 1]
         good_old = p0[status == 1]
+    else:
+        good_new = np.array([])
+
+    if len(good_new) == 2:
+        pt1 = good_new[0].ravel()
+        pt2 = good_new[1].ravel()
+
+        dist = np.linalg.norm(pt1 - pt2)
+
+        if prev_dist is not None:
+            dist_diff = dist - prev_dist
+
+            if trend == 1 and dist_diff < 0:
+                count += 1
+                trend = -1
+            elif trend == -1 and dist_diff > 0:
+                trend = 1
+
+        prev_dist = dist
+                
 
     for j, (new, old) in enumerate(zip(good_new, good_old)):
-        a, b = int(new[0]), int(new[1])
-        c, d = int(old[0]), int(old[1])
+        a, b = map(int, new.ravel())
+        c, d = map(int, old.ravel())
 
         #mask = cv2.line(mask, (a, b), (c, d), color[j].tolist(), 2)
         img = cv2.circle(img, (a, b), 5, color[j].tolist(), -1)
 
+    cv2.putText(img, f"count: {count / 2}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+    
     img = cv2.add(img, mask)    
 
     cv2.imshow('test', img)
 
-    key = cv2.waitKey(100)
+    key = cv2.waitKey(200)
     if key == 27: 
         break
 
