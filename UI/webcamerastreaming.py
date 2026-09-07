@@ -52,10 +52,11 @@ def live_stream():
     bottle.response.set_header('Expires', '0')
     return live_stream_loop()
 
-@bottle.post("/toggle_recoding")
+@bottle.post("/toggle_recording")
 def toggle_recoding():
     global is_recording
     global stop_requested
+    print("ボタンが押されました")
     if not is_recording:
         is_recording = True
         stop_requested = False
@@ -80,7 +81,7 @@ def main():
     global f_count
     global start_time
 
-    ngrok.forward(f'{HOST}:{PORT}', authtoken_from_env=True, domain=PUBLIC_URL)
+    #ngrok.forward(f'{HOST}:{PORT}', authtoken_from_env=True, domain=PUBLIC_URL)
     threading.Thread(target=run_server, daemon=True).start()
 
     cap = cv2.VideoCapture(0)
