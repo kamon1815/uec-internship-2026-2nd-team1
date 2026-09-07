@@ -4,5 +4,15 @@
 </head>
 <body>
     <h1>Hello World!</h1>
+    <img id="live-stream">
+    <script>
+        const video = document.getElementById('live-stream');
+        window.addEventListener('load', () => {
+            video.src = '/live_stream';
+        });
+        window.addEventListener('pagehide', () => {
+            video.src = '';
+        });
+    </script>
 </body>
 </html>
