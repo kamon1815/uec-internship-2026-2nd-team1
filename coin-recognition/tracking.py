@@ -5,7 +5,7 @@ from pathlib import Path
 # 変数、パラメータの初期設定
 BASE_DIR = Path(__file__).resolve().parent
 
-clahe = cv2.createCLAHE(clipLimit = 5.0, tileGridSize = (8, 8))
+clahe = cv2.createCLAHE(clipLimit = 4.0, tileGridSize = (8, 8))
 
 feature_params = dict(maxCorners = 2,
                       qualityLevel = 0.01,
@@ -16,15 +16,16 @@ subpix_criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 0.001)
 
 lk_params = dict(winSize = (21, 21),
                  maxLevel = 3,
-                 criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+                 criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 0.001))
 
-points = []
+interval = 0
+total_angle = 0.0
+prev_angle = None
 
 # 画像の前処理
 def process_img(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = clahe.apply(gray)
-    #gray = cv2.GaussianBlur(gray, (3, 3), 0)
     return gray
 
 # マウス左クリックによる特徴点の追加
@@ -42,6 +43,7 @@ cv2.namedWindow(window_name)
 cv2.setMouseCallback(window_name, select_points)
 
 selecting_points = True
+points = []
 p0 = None
 
 while selecting_points:
@@ -70,19 +72,15 @@ while selecting_points:
             selecting_points = False
 
 if p0 is not None:
-    p0 = cv2.cornerSubPix(gray_i, p0, (7, 7), (-1, -1), subpix_criteria)
+    p0 = cv2.cornerSubPix(gray_i, p0, (17, 17), (-1, -1), subpix_criteria)
 
 mask = np.zeros_like(img)
 
 number_p = len(p0)
 color = np.random.randint(0, 255, (number_p, 3))
 
-count = 0
-prev_dist = None
-trend = -1
-
 # 特徴点の追跡処理    
-for i in range(800, 1400):
+for i in range(800, 1300):
     number = str(i) + '.bmp' 
     next_number = str(i + 1) + '.bmp' 
 
@@ -106,41 +104,54 @@ for i in range(800, 1400):
         good_new = np.array([])
 
     if len(good_new) == 2:
+        good_new = cv2.cornerSubPix(gray_ni, good_new.reshape(-1, 1, 2), (17, 17), (-1, -1), subpix_criteria).reshape(-1, 2)
+
         pt1 = good_new[0].ravel()
         pt2 = good_new[1].ravel()
 
-        dist = np.linalg.norm(pt1 - pt2)
+        dx = pt2[0] - pt1[0]
+        dy = pt2[1] - pt1[1]
 
-        if prev_dist is not None:
-            dist_diff = dist - prev_dist
+        angle = np.degrees(np.arctan2(dy, dx))
 
-            if trend == 1 and dist_diff < 0:
-                count += 1
-                trend = -1
-            elif trend == -1 and dist_diff > 0:
-                trend = 1
+        if prev_angle is not None:
+            diff_angle = angle - prev_angle
 
-        prev_dist = dist
+            if diff_angle > 180:
+                diff_angle -= 360
+            elif diff_angle < -180:
+                diff_angle += 360
+
+            total_angle += diff_angle
+
+        prev_angle = angle
+
+        cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+        cv2.putText(img, f"rotations: {abs(total_angle) / 360:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+
                 
-
     for j, (new, old) in enumerate(zip(good_new, good_old)):
         a, b = map(int, new.ravel())
         c, d = map(int, old.ravel())
 
-        #mask = cv2.line(mask, (a, b), (c, d), color[j].tolist(), 2)
         img = cv2.circle(img, (a, b), 5, color[j].tolist(), -1)
 
-    cv2.putText(img, f"count: {count / 2}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
-    
     img = cv2.add(img, mask)    
 
     cv2.imshow('test', img)
 
-    key = cv2.waitKey(200)
+    key = cv2.waitKey(interval)
     if key == 27: 
         break
+    elif key == ord("s"):
+        interval = 20
+    elif key == ord("r"):
+        interval = 0
 
     gray_i = gray_ni.copy()
     p0 = good_new.reshape(-1, 1, 2)
 
-cv2.destroyAllWindows()
+interval = 0
+key = cv2.waitKey(interval)
+if key == 27: 
+    cv2.destroyAllWindows()
