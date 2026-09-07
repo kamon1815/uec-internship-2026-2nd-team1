@@ -22,41 +22,38 @@
       background: #0075c1;
       color: white;
       }
-    .file-button {
-      width: 500px;
-      height: 600px;
-      border: 2px green dotted;
-      padding: 0;
-      position: relative;
-      }
-
-    .file-button::file-selector-button {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-weight: bold;
-      color: white;
-      background: green;
-      font-size: 14px;
-      border: 0;
-      border-radius: 10em;
-      padding: 8px 16px;
-      text-align: center;
-      }
-    
   </style>
+
 </head>
 <body>
 
 <div style="padding: 30px; text-align: right;">
     <button type="submit" class="btn-border">ボタン</button>
 </div>
-<input type="file" class="file-button">
-<p class="example1-r">
-    テキスト
-</p>
+	<video id="test1" width="500" height="300" >
+		<source src="mask.mp4" type="video/mp4">
+	</video>
 
+<img src="/live_stream" width="640" style="text-align: left;">
+<script>
+  const recordButton = document.getElementById("recordButtton");
+  const recordingMessage = document.getElementById("recordingMessage");
+
+  recordingButton.addEventListener("click", async function () {
+    const responce = await fetch("/toggle_Recoding", {
+      method: "POST"
+    });
+
+    const result = await responce.json();
+    if (result.recoding){
+      recordButton.textContent = "録画終了";
+      recordingMessage.textContent = "録画中";
+    } else {
+      recordButton.textContent = "録画開始";
+      recordingMessage.textContent = "動画を保存しました";
+    }
+  });
+</script>
 </body>
 
 
