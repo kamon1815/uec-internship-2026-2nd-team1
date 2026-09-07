@@ -22,18 +22,29 @@
       background: #0075c1;
       color: white;
       }
-    input[type="file"]::file-selector-button {
-      border: 2px solid #6c5ce7;
-      padding: 0.2em 0.4em;
-      border-radius: 0.2em;
-      background-color: #a29bfe;
-      transition: 1s;
+    .file-button {
+      width: 500px;
+      height: 600px;
+      border: 2px green dotted;
+      padding: 0;
+      position: relative;
       }
 
-      input[type="file"]::file-selector-button:hover {
-        background-color: #81ecec;
-        border: 2px solid #00cec9;
+    .file-button::file-selector-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: bold;
+      color: white;
+      background: green;
+      font-size: 14px;
+      border: 0;
+      border-radius: 10em;
+      padding: 8px 16px;
+      text-align: center;
       }
+    
   </style>
 </head>
 <body>
@@ -41,17 +52,11 @@
 <div style="padding: 30px; text-align: right;">
     <button type="submit" class="btn-border">ボタン</button>
 </div>
-<div style="text-align: left;">
-  <video id="myVideo" controls>
-    <source src="mask.mp4" type="video/mp4" />
-  </video>
-</div>
+<input type="file" class="file-button">
 <p class="example1-r">
     テキスト
 </p>
-<form>
-  <input type="file" id="fileUpload" />
-</form>
+
 </body>
 
 
