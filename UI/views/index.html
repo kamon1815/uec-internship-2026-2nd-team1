@@ -35,28 +35,34 @@
 	</video>
 
 <img src="/live_stream" width="640" style="text-align: left;">
-<button type="button" id="recordButton">
+<button type="button" id="recordButton" class="btn-border" onclick="toggleRecording()">
   録画開始
 </button>
 <p id="recordingMessage"></p>
 <script>
-  const recordButton = document.getElementById("recordButtton");
+async function toggleRecording(){
+  const recordButton = document.getElementById("recordButton");
   const recordingMessage = document.getElementById("recordingMessage");
 
-  recordingButton.addEventListener("click", async function () {
-    const responce = await fetch("/toggle_Recoding", {
+  try{
+    const responce = await fetch("/toggle_recording", {
       method: "POST"
     });
 
     const result = await responce.json();
-    if (result.recoding){
-      recordButton.textContent = "録画終了";
-      recordingMessage.textContent = "録画中";
+
+    if (result.recording){
+        recordButton.textContent = "録画終了";
+        recordingMessage.textContent = "録画中";
     } else {
       recordButton.textContent = "録画開始";
       recordingMessage.textContent = "動画を保存しました";
     }
-  });
+  } catch (error){
+    console.error(error);
+    recordingMessage.textContent = "エラーが発生しました"
+  }
+  }
 </script>
 </body>
 
