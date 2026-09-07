@@ -52,6 +52,77 @@ class Output:
 INPUT_FILE  = './faster_capture/output/infinicam_coin_toss_meetingroom_10yen_1000fps.npy'
 OUTPUT_FILE = './coin_recognition/output/coin_recognition.mp4'
 
+
+def nearest_bbox(frame, background, center):
+    _, dark = cv2.threshold(cv2.subtract(background, frame), 6, 255, cv2.THRESH_BINARY)
+    dark = cv2.morphologyEx(dark, cv2.MORPH_OPEN,  np.ones((3, 3), dtype=np.uint8))
+    count, _, stats, centers = cv2.connectedComponentsWithStats(dark)
+    px, py = center
+    candidates = []
+    for i in range(1, count):
+        cx, cy = centers[i]
+        x, y, w, h, area = stats[i]
+        if not 15 <= area <= 6000:
+            continue
+        distance = np.hypot(cx - px, cy - py)
+        if distance < 14:
+            candidates.append((distance, (cx, cy), (x, y, w, h)))
+    return min(candidates, default=None, key=lambda x: x[0])
+        
+
+def track_bboxes(video, background, points, inliers, cx, cy):
+    anchor = int(points[inliers[len(inliers) // 2], 0])
+
+    found = nearest_bbox(
+        video.get_frame(anchor),
+        background,
+        (np.polyval(cx, anchor), np.polyval(cy, anchor))
+    )
+
+    if found is None:
+        return {}
+
+    rows = {anchor: found}
+
+    for direction in (-1, 1):
+        history = [(anchor, *found[1])]
+        misses = 0
+
+        stop = -1 if direction < 0 else video.frame_count
+
+        for i in range(anchor + direction, stop, direction):
+            if len(history) == 1:
+                prediction = history[-1][1:]
+            else:
+                _, x1, y1 = history[-2]
+                _, x2, y2 = history[-1]
+
+                prediction = (
+                    x2 + (x2 - x1),
+                    y2 + (y2 - y1)
+                )
+
+            found_next = nearest_bbox(
+                video.get_frame(i),
+                background,
+                prediction
+            )
+
+            if found_next is None:
+                misses += 1
+                if misses >= 6:
+                    break
+                continue
+
+            rows[i] = found_next
+            history.append((i, *found_next[1]))
+            history = history[-2:]
+            misses = 0
+
+    return rows
+
+
+
 def main():
     static_ffmpeg.add_paths()
     video = Video(INPUT_FILE)
@@ -74,7 +145,7 @@ def main():
         _, dark = cv2.threshold(cv2.subtract(background, frame), 6, 255, cv2.THRESH_BINARY)
         dark = cv2.morphologyEx(dark, cv2.MORPH_OPEN,  np.ones((3, 3), dtype=np.uint8))
 
-        count, labels, stats, centers = cv2.connectedComponentsWithStats(dark)
+        count, _, stats, centers = cv2.connectedComponentsWithStats(dark)
         for j in range(1, count):
             cx, cy = centers[j]
             _, _, _, _, area = stats[j]
@@ -87,7 +158,7 @@ def main():
     points = np.array(points)
 
     # 複数回試行して放物線運動を推定(RANSAC)
-    t        = points[:, 0] / video.framerate
+    t        = points[:, 0]
     points_x = points[:, 1]
     points_y = points[:, 2]
 
@@ -104,7 +175,7 @@ def main():
 
         # 時間間隔の短いものは近似精度が悪くなるので採用しない
         selected = selected[np.argsort(t[selected])]
-        if np.min(np.diff(t[selected])) < 0.05:
+        if np.min(np.diff(t[selected])) < 0.05 * video.framerate:
             continue
 
         # 選んだ3点から放物線軌道を作成
@@ -112,7 +183,7 @@ def main():
         cy = np.polyfit(t[selected], points_y[selected], 1)
 
         # x方向の加速度が小さいものは除外
-        if cx[0] >= -2*video.width:
+        if cx[0] >= -2 * video.width / video.framerate**2:
             continue
 
         # 時間ごとの予測位置
@@ -134,37 +205,20 @@ def main():
     cx = np.polyfit(t[best_inliers], points_x[best_inliers], 2)
     cy = np.polyfit(t[best_inliers], points_y[best_inliers], 1)
 
-    for i in range(0, video.frame_count, interval):
-        frame = video.get_frame(i)
-        frame_show = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+    bboxes = track_bboxes(video, background, points, best_inliers, cx, cy)
 
-        t = i / video.framerate
-        x = np.polyval(cx, t)
-        y = np.polyval(cy, t)
-        cv2.drawMarker(frame_show, (round(x), round(y)), (0, 255, 0))
+    for i in range(video.frame_count):
 
-        output.write_frame(frame_show)
+        show = cv2.cvtColor(video.get_frame(i), cv2.COLOR_GRAY2BGR)
+        cv2.putText(show, str(i), (15, 35), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0))
+
+        if i in bboxes:
+            _, _, (x,y,w,h) = bboxes[i]
+            cv2.rectangle(show, (x,y), (x+w,y+h), (0,255,0), 2)
+
+        output.write_frame(show)
 
 
-
-    # interval = 10
-    # for i in range(interval, video.frame_count, interval):
-    #     previous = video.get_frame(i - interval)
-    #     current  = video.get_frame(i)
-
-    #     previous_blur = cv2.GaussianBlur(previous, (5, 5), 0)
-    #     current_blur  = cv2.GaussianBlur(current, (5, 5), 0)
-
-    #     diff = cv2.absdiff(current_blur, previous_blur)
-    #     _, mask = cv2.threshold(diff, 7, 255, cv2.THRESH_BINARY)
-
-    #     opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((2, 2), dtype=np.uint8))
-
-    #     blob = cv2.cvtColor(opening, cv2.COLOR_GRAY2BGR)
-    #     count, _, stats, centroids = cv2.connectedComponentsWithStats(opening)
-    #     for j in range(1, count):
-    #         x, y, w, h, area = map(int, stats[j])
-    #         cv2.rectangle(blob, (x, y), (x+w, y+h), (0, 255, 0), 1)
 
 
 if __name__ == '__main__':
