@@ -1,20 +1,58 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>hello html</title>
+  <title>コイントスアプリ</title>
+  <style>
+    body{
+      background: #fff9cc;
+      }
+    .btn-border {
+      width: 250px;
+      height: 80px;
+      background: transparent;
+      color: #0075c1;
+      border: 2px solid #0075c1;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      }
+
+    .btn-border:hover {
+      background: #0075c1;
+      color: white;
+      }
+    input[type="file"]::file-selector-button {
+      border: 2px solid #6c5ce7;
+      padding: 0.2em 0.4em;
+      border-radius: 0.2em;
+      background-color: #a29bfe;
+      transition: 1s;
+      }
+
+      input[type="file"]::file-selector-button:hover {
+        background-color: #81ecec;
+        border: 2px solid #00cec9;
+      }
+  </style>
 </head>
-<body style="padding: 150px;">
-  hello html!
+<body>
+
+<div style="padding: 30px; text-align: right;">
+    <button type="submit" class="btn-border">ボタン</button>
+</div>
+<div style="text-align: left;">
   <video id="myVideo" controls>
     <source src="mask.mp4" type="video/mp4" />
   </video>
+</div>
+<p class="example1-r">
+    テキスト
+</p>
+<form>
+  <input type="file" id="fileUpload" />
+</form>
 </body>
 
-<style>
-#myVideo {
-  width: 640px;
-  aspect-ratio: 5 / 4;
-}
-</style>
+
 </html>
