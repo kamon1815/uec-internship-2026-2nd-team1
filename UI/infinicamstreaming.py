@@ -28,6 +28,49 @@ stop_requested = False
 f_count = 0
 start_time = 0.0
 
+def live_stream_loop():
+    while not shutdown_event.is_set():
+        with frame_lock:
+            frame = frame_latest
+        if frame is not None:
+            header = (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n'
+                + f'Content-Length: {len(frame)}\r\n\r\n'.encode()
+            )
+            yield header + frame + b'\r\n'
+        time.sleep(0.03)
+
+@bottle.get('/')
+def index():
+    return bottle.template('index')
+
+@bottle.route('/live_stream')
+def live_stream():
+    bottle.response.content_type = 'multipart/x-mixed-replace; boundary=frame'
+    bottle.response.set_header('Cache-Control', 'no-cache, private, must-revalidate')
+    bottle.response.set_header('Pragma', 'no-cache')
+    bottle.response.set_header('Expires', '0')
+    return live_stream_loop()
+
+@bottle.post("/toggle_recording")
+def toggle_recoding():
+    global is_recording
+    global stop_requested
+    print("ボタンが押されました")
+    if not is_recording:
+        is_recording = True
+        stop_requested = False
+        return{
+            "recording":True
+        }
+    else:
+        stop_requested = True
+        return{
+            "recording":False
+        }
+
+
 cam = pypuclib.CameraFactory().create()
 decoder = cam.decoder()
 reso = cam.resolution()
@@ -41,30 +84,20 @@ else:
     print('Since GPU is not available, decode using CPU')
 
 def xfer_callback(xferData):
-    global frame_latest
-    global is_recording
-    global stop_requested
-    global ffmpeg_process
-    global f_count
-    global start_time
+    global latest_jpeg
 
     if shutdown_event.is_set():
         return
 
     if GPUStatus:
-        frame = decoder.decodeGPU(xferData, True, reso.width)
+        array = decoder.decodeGPU(xferData, True, reso.width)
     else:
-        frame = decoder.decode(xferData)
-    success, frame_jpg = cv2.imencode('.jpg', frame)
+        array = decoder.decode(xferData)
+    success, encoded_image = cv2.imencode('.jpg', array)
     if success:
         with frame_lock:
-            frame_latest = frame_jpg.tobytes()
+            latest_jpg= encoded_image.tobytes()
 
-    if len(frame.shape) == 2:
-        save_frame = cv2.cvtColor(
-            frame,
-            cv2.COLOR_GRAY2BGR
-        )
 
 
     if is_recording and ffmpeg_process is None:
@@ -111,55 +144,21 @@ if is_recording and (
     is_recording = False
     stop_requested = False
     f_count = 0
+time.sleep(0.03)
 
-def live_stream_loop():
-    while not shutdown_event.is_set():
-        with frame_lock:
-            frame = frame_latest
-        if frame is not None:
-            header = (
-                b'--frame\r\n'
-                b'Content-Type: image/jpeg\r\n'
-                + f'Content-Length: {len(frame)}\r\n\r\n'.encode()
-            )
-            yield header + frame + b'\r\n'
-        time.sleep(0.03)
 
-@bottle.get('/')
-def index():
-    return bottle.template('index')
-
-@bottle.route('/live_stream')
-def live_stream():
-    bottle.response.content_type = 'multipart/x-mixed-replace; boundary=frame'
-    bottle.response.set_header('Cache-Control', 'no-cache, private, must-revalidate')
-    bottle.response.set_header('Pragma', 'no-cache')
-    bottle.response.set_header('Expires', '0')
-    return live_stream_loop()
-
-@bottle.post("/toggle_recording")
-def toggle_recoding():
-    global is_recording
-    global stop_requested
-    print("ボタンが押されました")
-    if not is_recording:
-        is_recording = True
-        stop_requested = False
-        return{
-            "recording":True
-        }
-    else:
-        stop_requested = True
-        return{
-            "recording":False
-        }
 
 
 def run_server():
     bottle.run(host=HOST, port=PORT, server='waitress')
 
 def main():
+    global frame_latest
+    global is_recording
+    global stop_requested
     global ffmpeg_process
+    global f_count
+    global start_time
 
     #ngrok.forward(f'{HOST}:{PORT}', authtoken_from_env=True, domain=PUBLIC_URL)
     threading.Thread(target=run_server, daemon=True).start()
