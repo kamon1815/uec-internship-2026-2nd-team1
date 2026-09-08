@@ -15,7 +15,7 @@ PORT = 8080
 PUBLIC_URL = 'cleaver-fraction-art.ngrok-free.dev'  # https://cleaver-fraction-art.ngrok-free.dev
 
 frame_lock = threading.Lock()
-frame_latest = None
+latest_jpeg = None
 shutdown_event = threading.Event()
 
 path = BASE_DIR / "recorded_movie.mp4"
@@ -28,15 +28,18 @@ stop_requested = False
 f_count = 0
 start_time = 0.0
 
+import random
+
 def live_stream_loop():
     while not shutdown_event.is_set():
+        print(random.randint(1,6))
         with frame_lock:
-            frame = frame_latest
+            frame = latest_jpeg
         if frame is not None:
             header = (
-                b'--frame\r\n'
-                b'Content-Type: image/jpeg\r\n'
-                + f'Content-Length: {len(frame)}\r\n\r\n'.encode()
+                f'--frame\r\n'
+                f'Content-Type: image/jpeg\r\n'
+                f'Content-Length: {len(frame)}\r\n\r\n'
             )
             yield header + frame + b'\r\n'
         time.sleep(0.03)
@@ -98,7 +101,11 @@ def xfer_callback(xferData):
     success, encoded_image = cv2.imencode('.jpg', array)
     if success:
         with frame_lock:
-            latest_jpg= encoded_image.tobytes()
+            latest_jpeg = encoded_image.tobytes()
+
+
+
+
 
 def get_mjpeg_stream():
     while not shutdown_event.is_set():
@@ -117,52 +124,52 @@ def get_mjpeg_stream():
 
 
 
-    if is_recording and ffmpeg_process is None:
-        height, width = frame.shape[:2]
+    # if is_recording and ffmpeg_process is None:
+    #     height, width = frame.shape[:2]
 
-        start_time = time.time()
-        stop_requested = False
-        f_count = 0
+    #     start_time = time.time()
+    #     stop_requested = False
+    #     f_count = 0
 
 
-        ffmpeg_process = (
-            ffmpeg 
-            .input(
-                "pipe:",
-                format="rawvideo",
-                pix_fmt="bgr24", 
-                s=f"{width}*{height}",
-                r=fps
-            )
-            .output(
-                str(path),
-                vcodec=vcodec,
-                pix_fmt="yuv420p",
-                r=fps
-            )
-            .overwrite_output()
-            .run_async(pipe_stdin=True)
-        )   
-        print("録画開始")
+    #     ffmpeg_process = (
+    #         ffmpeg 
+    #         .input(
+    #             "pipe:",
+    #             format="rawvideo",
+    #             pix_fmt="bgr24", 
+    #             s=f"{width}*{height}",
+    #             r=fps
+    #         )
+    #         .output(
+    #             str(path),
+    #             vcodec=vcodec,
+    #             pix_fmt="yuv420p",
+    #             r=fps
+    #         )
+    #         .overwrite_output()
+    #         .run_async(pipe_stdin=True)
+    #     )   
+    #     print("録画開始")
 
-    if is_recording and ffmpeg_process is not None:
-        ffmpeg_process.stdin.write(save_frame.tobytes())
-        f_count += 1
+    # if is_recording and ffmpeg_process is not None:
+    #     ffmpeg_process.stdin.write(save_frame.tobytes())
+    #     f_count += 1
 
-    if is_recording and (
-        stop_requested or 
-        f_count >= MAX_SAVE_FRAME_COUNT
-    ):
-        ffmpeg_process.stdin.close()
-        ffmpeg_process.wait()
-        print("録画終了")
-        print("保存先：", path)
+    # if is_recording and (
+    #     stop_requested or 
+    #     f_count >= MAX_SAVE_FRAME_COUNT
+    # ):
+    #     ffmpeg_process.stdin.close()
+    #     ffmpeg_process.wait()
+    #     print("録画終了")
+    #     print("保存先：", path)
 
-        ffmpeg_process = None
-        is_recording = False
-        stop_requested = False
-        f_count = 0
-    time.sleep(0.03)
+    #     ffmpeg_process = None
+    #     is_recording = False
+    #     stop_requested = False
+    #     f_count = 0
+    # time.sleep(0.03)
 
 
 
@@ -171,7 +178,6 @@ def run_server():
     bottle.run(host=HOST, port=PORT, server='waitress')
 
 def main():
-    global frame_latest
     global is_recording
     global stop_requested
     global ffmpeg_process
@@ -200,7 +206,7 @@ def main():
         if GPUStatus:
             decoder.teardownGPUDecode()
 
-        decoder.teardownGPUDecode()
+        # decoder.teardownGPUDecode()
         print("終了しました")
 
 if __name__ == '__main__':
