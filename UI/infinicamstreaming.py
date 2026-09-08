@@ -200,7 +200,7 @@ def main():
         if GPUStatus:
             decoder.teardownGPUDecode()
 
-        decoder.teardownDecode()
+        decoder.teardownGPUDecode()
         print("終了しました")
 
 if __name__ == '__main__':
