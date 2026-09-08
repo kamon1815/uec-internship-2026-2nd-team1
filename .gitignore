@@ -35,3 +35,5 @@
 
 cache/
 ddcolor_sample/output/
+faster_capture/output/*
+!faster_capture/output/.gitkeep
