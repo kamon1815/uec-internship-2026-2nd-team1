@@ -2,7 +2,7 @@ import cv2
 import ffmpeg
 import numpy as np
 import static_ffmpeg
-from video import Video
+#from video import Video
 
 class Output:
     def __init__(self, width, height, path):

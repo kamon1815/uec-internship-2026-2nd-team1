@@ -9,13 +9,11 @@ sys.path.append(parent_dir)
 
 from coin_recognition.video import Video
 
-video = Video("パス")
-
 # ディレクトリの設定
 BASE_DIR = Path(__file__).resolve().parent
 DIR = BASE_DIR / "infinicam_coin_toss_meetingroom_10yen_1000fps"
 
-video = Video("faster_capture\output\infinicam_coin_toss_meetingroom_10yen_1000fps.npy")
+video = Video("faster_capture\\output\\infinicam_coin_toss_meetingroom_10yen_1000fps.npy")
 
 exit()
 
