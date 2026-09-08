@@ -37,5 +37,6 @@ cache/
 ddcolor_sample/output/
 tracking/infinicam_coin_toss_meetingroom_10yen_1000fps/
 faster_capture/output/*.npy
-coin_recognition/output/*.npy
+coin_recognition/output/
+!coin_recognition/output/.gitkeep
 __pycache__/
