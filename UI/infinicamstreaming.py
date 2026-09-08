@@ -6,6 +6,15 @@ import threading
 import time
 import ffmpeg
 import pypuclib
+import tempfile
+import os
+import sys
+import shutil
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(parent_dir)
+
+from faster_capture.npy_saver import NpySaver
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
 bottle.TEMPLATE_PATH.append(BASE_DIR / 'views')
@@ -44,21 +53,44 @@ def live_stream():
     bottle.response.set_header('Expires', '0')
     return live_stream_loop()
 
+recording_lock  = threading.Lock()
 is_recording = False
+raw_video = None
 
 @bottle.post("/toggle_recording")
 def toggle_recoding():
-    global is_recording
+    global raw_video, is_recording
+
     print("ボタンが押されました")
-    is_recording = not is_recording
-    if is_recording:
-        return {
-            "recording":True
-        }
-    else:
-        return {
-            "recording":False
-        }
+
+    with recording_lock:
+        is_recording = not is_recording
+        if is_recording:
+            raw_video = tempfile.NamedTemporaryFile(mode='w+b')
+            npy_saver.start_record(raw_video)
+
+            return {
+                "recording": True
+            }
+        else:
+            npy_saver.end_record(raw_video)
+            raw_video.flush()
+
+
+            # 解析処理ここから
+
+            raw_video.seek(0)
+            with open('UI/output/tmp.npy', 'wb') as f:
+                shutil.copyfileobj(raw_video, f)
+
+            # 解析処理ここまでなはず
+
+
+            raw_video.close()
+            
+            return {
+                "recording": False
+            }
 
 decoder = None
 reso = None
@@ -69,10 +101,15 @@ def xfer_callback(xferData):
     if shutdown_event.is_set():
         return
 
+    with recording_lock:
+        if is_recording:
+            npy_saver.write_frame(raw_video, xferData.data())
+
     if GPUStatus:
         array = decoder.decodeGPU(xferData, True, reso.width)
     else:
         array = decoder.decode(xferData)
+
     success, encoded_image = cv2.imencode('.jpg', array)
     if success:
         with frame_lock:
@@ -83,16 +120,25 @@ def run_server():
     bottle.run(host=HOST, port=PORT, server='waitress')
 
 
+
+FPS = 1000
+WIDTH = 1246
+HEIGHT = 1008
+
 def main():
-    global decoder, reso, GPUStatus
+    global decoder, reso, GPUStatus, npy_saver
 
     #ngrok.forward(f'{HOST}:{PORT}', authtoken_from_env=True, domain=PUBLIC_URL)
     threading.Thread(target=run_server, daemon=True).start()
 
 
     cam = pypuclib.CameraFactory().create()
+    cam.setFramerateShutter(FPS, FPS)
+    cam.setResolution(WIDTH, HEIGHT)
     decoder = cam.decoder()
+    quantization = decoder.quantization()
     reso = cam.resolution()
+
     GPUStatus = decoder.getAvailableGPUProcess()
     if GPUStatus:
         param = pypuclib.GPUSetup(reso.width, reso.height)
@@ -101,6 +147,7 @@ def main():
     else:
         print('Since GPU is not available, decode using CPU')
 
+    npy_saver = NpySaver(FPS, WIDTH, HEIGHT, quantization)
 
     try:
         cam.beginXfer(xfer_callback)
@@ -119,6 +166,8 @@ def main():
 
         if GPUStatus:
             decoder.teardownGPUDecode()
+
+        raw_video.close()
 
         # decoder.teardownGPUDecode()
         print("終了しました")

@@ -37,3 +37,6 @@ cache/
 ddcolor_sample/output/
 faster_capture/output/*
 !faster_capture/output/.gitkeep
+UI/output/*
+!UI/output/.gitkeep
+__pycache__/
