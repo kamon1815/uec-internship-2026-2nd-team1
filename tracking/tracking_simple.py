@@ -1,9 +1,15 @@
 import cv2 
 import numpy as np
 from pathlib import Path
+import os
+import sys
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(parent_dir)
+
 from coin_recognition.video import Video
 
-video = Video()
+video = Video("パス")
 
 # ディレクトリの設定
 BASE_DIR = Path(__file__).resolve().parent
