@@ -40,9 +40,60 @@ def live_stream_loop():
                 f'--frame\r\n'
                 f'Content-Type: image/jpeg\r\n'
                 f'Content-Length: {len(frame)}\r\n\r\n'
-            )
+            ).encode()
             yield header + frame + b'\r\n'
         time.sleep(0.03)
+
+
+
+    if is_recording and ffmpeg_process is None:
+        height, width = frame.shape[:2]
+
+        start_time = time.time()
+        stop_requested = False
+        f_count = 0
+
+
+        ffmpeg_process = (
+            ffmpeg 
+            .input(
+                "pipe:",
+                format="rawvideo",
+                pix_fmt="bgr24", 
+                s=f"{width}*{height}",
+                r=fps
+            )
+            .output(
+                str(path),
+                vcodec=vcodec,
+                pix_fmt="yuv420p",
+                r=fps
+            )
+            .overwrite_output()
+            .run_async(pipe_stdin=True)
+        )   
+        print("録画開始")
+
+    if is_recording and ffmpeg_process is not None:
+        ffmpeg_process.stdin.write(save_frame.tobytes())
+        f_count += 1
+
+    if is_recording and (
+        stop_requested or 
+        f_count >= MAX_SAVE_FRAME_COUNT
+    ):
+        ffmpeg_process.stdin.close()
+        ffmpeg_process.wait()
+        print("録画終了")
+        print("保存先：", path)
+
+        ffmpeg_process = None
+        is_recording = False
+        stop_requested = False
+        f_count = 0
+    time.sleep(0.03)
+
+
 
 @bottle.get('/')
 def index():
@@ -88,9 +139,9 @@ if GPUStatus:
 else:
     print('Since GPU is not available, decode using CPU')
 
+
 def xfer_callback(xferData):
     global latest_jpeg
-
     if shutdown_event.is_set():
         return
 
@@ -102,75 +153,6 @@ def xfer_callback(xferData):
     if success:
         with frame_lock:
             latest_jpeg = encoded_image.tobytes()
-
-
-
-
-
-def get_mjpeg_stream():
-    while not shutdown_event.is_set():
-        with frame_lock:
-            frame = latest_jpeg
-
-        if frame is not None:
-            header = (
-                f'--frame\r\n'
-                f'Content-Type: image/jpeg\r\n'
-                f'Content-Length: {len(frame)}\r\n\r\n'
-            ).encode()
-            yield header + frame + b'\r\n'
-
-        time.sleep(0.03)
-
-
-
-    # if is_recording and ffmpeg_process is None:
-    #     height, width = frame.shape[:2]
-
-    #     start_time = time.time()
-    #     stop_requested = False
-    #     f_count = 0
-
-
-    #     ffmpeg_process = (
-    #         ffmpeg 
-    #         .input(
-    #             "pipe:",
-    #             format="rawvideo",
-    #             pix_fmt="bgr24", 
-    #             s=f"{width}*{height}",
-    #             r=fps
-    #         )
-    #         .output(
-    #             str(path),
-    #             vcodec=vcodec,
-    #             pix_fmt="yuv420p",
-    #             r=fps
-    #         )
-    #         .overwrite_output()
-    #         .run_async(pipe_stdin=True)
-    #     )   
-    #     print("録画開始")
-
-    # if is_recording and ffmpeg_process is not None:
-    #     ffmpeg_process.stdin.write(save_frame.tobytes())
-    #     f_count += 1
-
-    # if is_recording and (
-    #     stop_requested or 
-    #     f_count >= MAX_SAVE_FRAME_COUNT
-    # ):
-    #     ffmpeg_process.stdin.close()
-    #     ffmpeg_process.wait()
-    #     print("録画終了")
-    #     print("保存先：", path)
-
-    #     ffmpeg_process = None
-    #     is_recording = False
-    #     stop_requested = False
-    #     f_count = 0
-    # time.sleep(0.03)
-
 
 
 
@@ -190,7 +172,7 @@ def main():
         cam.beginXfer(xfer_callback)
         print("INFINICAM開始")
         while True:
-            time .sleep(0.1)
+            time.sleep(0.1)
 
     except KeyboardInterrupt:
         pass
