@@ -15,6 +15,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(parent_dir)
 
 from faster_capture.npy_saver import NpySaver
+from tracking import tracking_UImerge
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
 bottle.TEMPLATE_PATH.append(BASE_DIR / 'views')
@@ -66,7 +67,7 @@ def toggle_recoding():
     with recording_lock:
         is_recording = not is_recording
         if is_recording:
-            raw_video = tempfile.NamedTemporaryFile(mode='w+b')
+            raw_video = tempfile.NamedTemporaryFile(mode='w+b', delete=False)
             npy_saver.start_record(raw_video)
 
             return {
@@ -79,14 +80,19 @@ def toggle_recoding():
 
             # 解析処理ここから
 
-            raw_video.seek(0)
-            with open('UI/output/tmp.npy', 'wb') as f:
-                shutil.copyfileobj(raw_video, f)
+            # raw_video.seek(0)
+            # with open('UI/output/tmp.npy', 'wb') as f:
+            #     shutil.copyfileobj(raw_video, f)
+
+            raw_video.close()
+            tracking_UImerge.tracking(raw_video.name)
+            os.remove(raw_video.name)
+
 
             # 解析処理ここまでなはず
 
 
-            raw_video.close()
+            
             
             return {
                 "recording": False
@@ -167,7 +173,8 @@ def main():
         if GPUStatus:
             decoder.teardownGPUDecode()
 
-        raw_video.close()
+        if raw_video is not None:
+            raw_video.close()
 
         # decoder.teardownGPUDecode()
         print("終了しました")
