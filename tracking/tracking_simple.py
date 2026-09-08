@@ -1,10 +1,17 @@
 import cv2 
 import numpy as np
 from pathlib import Path
+from coin_recognition.video import Video
+
+video = Video()
 
 # ディレクトリの設定
 BASE_DIR = Path(__file__).resolve().parent
 DIR = BASE_DIR / "infinicam_coin_toss_meetingroom_10yen_1000fps"
+
+video = Video("faster_capture\output\infinicam_coin_toss_meetingroom_10yen_1000fps.npy")
+
+exit()
 
 # 各種パラメータの設定
 clahe = cv2.createCLAHE(clipLimit = 4.0, tileGridSize = (8, 8))
