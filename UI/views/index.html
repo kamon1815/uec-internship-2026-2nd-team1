@@ -3,7 +3,7 @@
   <meta charset="UTF-8">
   <title>コイントスアプリ</title>
   <style>
-    body{
+        body{
       background: #fff9cc;
       }
     .btn-border {
@@ -22,48 +22,133 @@
       background: #0075c1;
       color: white;
       }
+
+    .field {
+      display: flex;
+      align-items: center; 
+      gap: 30px;           
+      }
+
+    
+    .dli-chevron-round-right {
+      display: inline-block;
+      vertical-align: middle;
+      color: #333;
+      line-height: 1;
+      position: relative;
+      width: 50px;
+      height: 50px;
+      transform: rotate(45deg); 
+    }
+
+    .dli-chevron-round-right::before, .dli-chevron-round-right::after {
+      content: '';
+      position: absolute;
+      background: currentColor;
+      border-radius: 7px;
+    }
+
+    .dli-chevron-round-right::before {
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .dli-chevron-round-right::after {
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 3px;
+    }
+
   </style>
 
 </head>
 <body>
 
-<div style="padding: 30px; text-align: right;">
-    <button type="submit" class="btn-border">ボタン</button>
-</div>
-	<video id="test1" width="500" height="300" >
-		<source src="mask.mp4" type="video/mp4">
-	</video>
+<div class="field" style="align-items: left;">
+
+
 
 <img src="/live_stream" width="640" style="text-align: left;">
+
+
+
+<span class="dli-chevron-round-right"></span>
+
+<div>
+<video id="videoPlayer" width="640" height="480" controls loop>
+    <source id="videoSource" src="/videos/recorded_movie.mp4" type="video/mp4">
+</video>
+<p>
+    現在の再生速度：
+    <span id="speedDisplay">1.00</span>倍
+</p>
+
+<button type="button" onclick="changeSpeed(-0.25)">
+    0.25下げる
+</button>
+
+<button type="button" onclick="changeSpeed(0.25)">
+    0.25上げる
+</button>
+</div>
 <button type="button" id="recordButton" class="btn-border" onclick="toggleRecording()">
   録画開始
 </button>
+</div>
+
+
 <p id="recordingMessage"></p>
+
 <script>
-async function toggleRecording(){
-  const recordButton = document.getElementById("recordButton");
-  const recordingMessage = document.getElementById("recordingMessage");
+async function toggleRecording() {
+    const recordButton = document.getElementById("recordButton");
+    const videoPlayer = document.getElementById("videoPlayer");
+    const videoSource = document.getElementById("videoSource");
 
-  try{
-    const responce = await fetch("/toggle_recording", {
-      method: "POST"
-    });
+    try {
+        const response = await fetch("/toggle_recording", {
+            method: "POST"
+        });
 
-    const result = await responce.json();
+        const result = await response.json();
 
-    if (result.recording){
-        recordButton.textContent = "録画終了";
-        recordingMessage.textContent = "録画中";
-    } else {
-      recordButton.textContent = "録画開始";
-      recordingMessage.textContent = "動画を保存しました";
+        if (result.recording) {
+            recordButton.textContent = "録画終了";
+        } else {
+            recordButton.textContent = "録画開始";
+
+            // MP4の保存完了後、1秒待ってから表示
+            setTimeout(() => {
+                videoSource.src =
+                    "/videos/recorded_movie.mp4?t=" + Date.now();
+
+                videoPlayer.load();
+            }, 1000);
+        }
+    } catch (error) {
+        console.error(error);
     }
-  } catch (error){
-    console.error(error);
-    recordingMessage.textContent = "エラーが発生しました"
-  }
-  }
+}
+
+function changeSpeed(changeValue) {
+    const videoPlayer = document.getElementById("videoPlayer");
+    const speedDisplay = document.getElementById("speedDisplay");
+
+    let newSpeed = videoPlayer.playbackRate + changeValue;
+
+    // 0.25倍から2倍までに制限
+    newSpeed = Math.max(0.25, Math.min(2, newSpeed));
+
+    videoPlayer.playbackRate = newSpeed;
+    speedDisplay.textContent = newSpeed.toFixed(2);
+}
+
 </script>
+
+
 </body>
 
 
