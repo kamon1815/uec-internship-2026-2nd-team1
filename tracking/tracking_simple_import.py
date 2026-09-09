@@ -14,7 +14,7 @@ from coin_recognition.video import Video
 from coin_recognition import coin_recognition
 
 # ディレクトリの設定
-video = Video("faster_capture\\output\\infinicam_coin_toss_meetingroom_10yen_1000fps.npy")
+video = Video("faster_capture\\output\\1.npy")
 OUTPUT_FILE = './tracking/output/tracking.mp4'
 
 process = (
@@ -73,21 +73,21 @@ while True:
     diff_angle = 0.0
 
     # 動画を停止状態から始める
-    interval = 0
+    interval = 1
 
-    for i in range(start - 100, start):
-        img = video.get_frame(i)
-        cv2.imshow('test - \'s\':start, \'r\':stop, \'esc\':exit', img) 
-        process.stdin.write(img.tobytes())
+    # for i in range(start - 100, start):
+    #     img = video.get_frame(i)
+    #     cv2.imshow('test - \'s\':start, \'r\':stop, \'esc\':exit', img) 
+    #     process.stdin.write(img.tobytes())
 
-        # コマ送りの操作 
-        key = cv2.waitKey(interval)
-        if key == 27 or i == end: # esc:終了
-            break
-        elif key == ord("s"): # s:再生 
-            interval = INTERVAL
-        elif key == ord("r"): # r:一時停止
-            interval = 0
+    #     # コマ送りの操作 
+    #     key = cv2.waitKey(interval)
+    #     if key == 27 or i == end: # esc:終了
+    #         break
+    #     elif key == ord("s"): # s:再生 
+    #         interval = INTERVAL
+    #     elif key == ord("r"): # r:一時停止
+    #         interval = 0
 
     # 最初の特徴点の設定
     p0 = cv2.goodFeaturesToTrack(gray_i_start, mask = mask_roi, **feature_params)

@@ -12,6 +12,9 @@ def npy_viewer(input_file):
     width, height = header['resolution'].tolist()
     frame_count = header['frame_count'].item()
 
+    print('framerate:    ' + str(header['framerate']))
+    print('recorded_fps: ' + str(header['recorded_fps']))
+
     decoder = pypuclib.Decoder(header['quantization'].tolist())
     reso = pypuclib.Resolution(width, height)
 

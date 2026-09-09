@@ -86,7 +86,10 @@ def toggle_recoding():
 
             raw_video.close()
             tracking_UImerge.tracking(raw_video.name)
-            os.remove(raw_video.name)
+            print(raw_video.name)
+            # os.remove(raw_video.name)
+
+            # tracking_UImerge.tracking("faster_capture/output/infinicam_coin_toss_meetingroom_10yen_1000fps.npy")
 
 
             # 解析処理ここまでなはず

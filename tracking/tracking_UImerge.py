@@ -22,7 +22,7 @@ def tracking(input_path):
 
     process = (
         ffmpeg
-        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=100)
+        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=10)
         .output(OUTPUT_FILE, vcodec='h264_qsv')
         .overwrite_output()
         .run_async(pipe_stdin=True)
@@ -58,7 +58,7 @@ def tracking(input_path):
     bboxes = coin_recognition.get_bboxes(video)
 
     # 最初と最後のフレーム番号
-    start = min(bboxes.keys()) + 10
+    start = min(bboxes.keys())  # + 10
     end = max(bboxes.keys())
 
     # 最初のフレームの設定
@@ -78,12 +78,12 @@ def tracking(input_path):
     prev_angle = None
     diff_angle = 0.0
 
-    for i in range(start - 100, start):
-        img = video.get_frame(i)
-        process.stdin.write(img.tobytes())
+    #for i in range(start - 100, start):
+    #    img = video.get_frame(i)
+    #    process.stdin.write(img.tobytes())
 
         # コマ送りの操作
-        cv2.waitKey(interval)
+    #    cv2.waitKey(interval)
 
     # 特徴点追跡の処理    
     for i in range(start, end):
@@ -146,7 +146,7 @@ def tracking(input_path):
         process.stdin.write(img.tobytes())
 
         # コマ送りの操作 
-        cv2.waitKey(interval)
+        # cv2.waitKey(interval)
 
         # 次のフレームと特徴点の設定
         gray_i = gray_ni.copy()

@@ -30,11 +30,11 @@
 <div style="padding: 30px; text-align: right;">
     <button type="submit" class="btn-border">ボタン</button>
 </div>
-	<video id="test1" width="500" height="300" >
+	<video id="test1" width="500" height="300">
 		<source src="mask.mp4" type="video/mp4">
 	</video>
 
-<img src="/live_stream" width="640" style="text-align: left;">
+<img src="/live_stream" width="640" style="text-align: left; transform: rotate(-90deg);">
 <button type="button" id="recordButton" class="btn-border" onclick="toggleRecording()">
   録画開始
 </button>
@@ -43,6 +43,8 @@
 async function toggleRecording(){
   const recordButton = document.getElementById("recordButton");
   const recordingMessage = document.getElementById("recordingMessage");
+
+  recordButton.textContent = "処理中";
 
   try{
     const responce = await fetch("/toggle_recording", {
@@ -60,6 +62,7 @@ async function toggleRecording(){
     }
   } catch (error){
     console.error(error);
+    recordButton.textContent = "録画開始";
     recordingMessage.textContent = "エラーが発生しました"
   }
   }
