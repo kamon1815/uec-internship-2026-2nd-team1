@@ -4,7 +4,6 @@ import os
 import sys
 import ffmpeg
 import static_ffmpeg
-
 static_ffmpeg.add_paths()
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -29,7 +28,7 @@ def tracking(input_path):
     )
 
     # 各種パラメータの設定
-    clahe = cv2.createCLAHE(clipLimit = 3.0, tileGridSize = (4, 4))
+    clahe = cv2.createCLAHE(clipLimit = 4.0, tileGridSize = (4, 4))
 
     feature_params = dict(
         maxCorners = 2,
@@ -58,7 +57,7 @@ def tracking(input_path):
     bboxes = coin_recognition.get_bboxes(video)
 
     # 最初と最後のフレーム番号
-    start = min(bboxes.keys()) + 40
+    start = min(bboxes.keys()) + 20
     end = max(bboxes.keys())
 
     # 最初のフレームの設定
@@ -165,6 +164,7 @@ def tracking(input_path):
     print("解析完了")
 
 
-if __name__ == '__main__':
-    tracking("faster_capture/output/coin3.npy")
 
+if __name__ == '__main__':
+    OUTPUT_FILE = "faster_capture/output/coin.npy"
+    tracking(OUTPUT_FILE)
