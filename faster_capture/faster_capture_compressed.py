@@ -222,7 +222,7 @@ def main():
     #    print(f'usage: {__file__} <output_file>')
     #    exit(1)
     
-    OUTPUT_FILE =  './faster_capture/output/coin3.npy'
+    OUTPUT_FILE =  './faster_capture/output/coin.npy'
 
     try:
     #    capture_infinicam(sys.argv[1])
