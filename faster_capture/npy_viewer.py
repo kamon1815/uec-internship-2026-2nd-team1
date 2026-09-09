@@ -165,8 +165,11 @@ def npy_viewer(input_file):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print(f'usage: {__file__} <input_file>')
-        exit(1)
+    #if len(sys.argv) < 2:
+    #    print(f'usage: {__file__} <input_file>')
+    #    exit(1)
 
-    npy_viewer(sys.argv[1])
+    OUTPUT_FILE =  './faster_capture/output/coin1.npy'
+
+    #npy_viewer(sys.argv[1])
+    npy_viewer(OUTPUT_FILE)

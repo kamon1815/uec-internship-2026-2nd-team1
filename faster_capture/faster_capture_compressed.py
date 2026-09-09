@@ -218,12 +218,15 @@ def capture_infinicam(output_file):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print(f'usage: {__file__} <output_file>')
-        exit(1)
+    #if len(sys.argv) < 2:
+    #    print(f'usage: {__file__} <output_file>')
+    #    exit(1)
+    
+    OUTPUT_FILE =  './faster_capture/output/another_coin2.npy'
 
     try:
-        capture_infinicam(sys.argv[1])
+    #    capture_infinicam(sys.argv[1])
+        capture_infinicam(OUTPUT_FILE)
     except KeyboardInterrupt:
         pass
 
