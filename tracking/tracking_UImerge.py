@@ -22,68 +22,67 @@ def tracking(input_path):
 
     process = (
         ffmpeg
-        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=100)
+        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=30)
         .output(OUTPUT_FILE, vcodec='h264_qsv')
         .overwrite_output()
         .run_async(pipe_stdin=True)
     )
 
     # 各種パラメータの設定
-    clahe = cv2.createCLAHE(clipLimit = 4.0, tileGridSize = (8, 8))
+    clahe = cv2.createCLAHE(clipLimit = 3.0, tileGridSize = (4, 4))
 
-    feature_params = dict(maxCorners = 2,
-                        qualityLevel = 0.01,
-                        minDistance = 10,
-                        blockSize = 7)
+    feature_params = dict(
+        maxCorners = 2,
+        qualityLevel = 0.001,
+        minDistance = 20,
+        blockSize = 11
+    )
 
     subpix_criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 0.001)
 
-    lk_params = dict(winSize = (21, 21),
-                    maxLevel = 3,
-                    criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 0.001))
+    lk_params = dict(
+        winSize = (41, 41),
+        maxLevel = 4,
+        criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 0.001),
+        minEigThreshold = 0.000001
+    )
 
     # フレームの前処理
     def process_img(img):
-        #gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = clahe.apply(img)
-        return gray
+        processed = clahe.apply(img)
+        return processed
 
     # マーカーの色（赤と緑）
     color = np.array([[0, 0, 255], [0, 255, 0]])
 
-    # コマ送りのスピード（小さいほうが速い）
-    interval = 1
-
-    # 範囲指定の処理
     bboxes = coin_recognition.get_bboxes(video)
 
     # 最初と最後のフレーム番号
-    start = min(bboxes.keys()) + 10
+    start = min(bboxes.keys()) + 40
     end = max(bboxes.keys())
 
     # 最初のフレームの設定
     img_start = video.get_frame(start)
     gray_i_start = process_img(img_start)
 
+    #roi = cv2.selectROI('Select Target Area', img_start, showCrosshair = True, fromCenter = False)
+    #x, y, w, h = map(int, roi)
     _, _, (x, y, w, h) = bboxes[start]
     mask_roi = np.zeros_like(gray_i_start)
     mask_roi[y : y + h, x : x + w] = 255
 
     # 最初の特徴点の設定
     p0 = cv2.goodFeaturesToTrack(gray_i_start, mask = mask_roi, **feature_params)
-    p0 = cv2.cornerSubPix(gray_i_start, p0, (17, 17), (-1, -1), subpix_criteria)
+    p0 = cv2.cornerSubPix(gray_i_start, p0, (19, 19), (-1, -1), subpix_criteria)
 
     # 回転数計測のための変数
     total_angle = 0.0
     prev_angle = None
     diff_angle = 0.0
 
-    for i in range(start - 100, start):
-        img = video.get_frame(i)
-        process.stdin.write(img.tobytes())
-
-        # コマ送りの操作
-        cv2.waitKey(interval)
+    #for i in range(start - 100, start):
+    #    img = video.get_frame(i)
+    #    process.stdin.write(img.tobytes())
 
     # 特徴点追跡の処理    
     for i in range(start, end):
@@ -96,20 +95,27 @@ def tracking(input_path):
         # 次の特徴点を推定する
         p1, status_f, err = cv2.calcOpticalFlowPyrLK(gray_i, gray_ni, p0, None, **lk_params)
 
-        if p1 is not None: 
+        # 特徴点の追跡に失敗したら終了
+        if np.any(status_f.ravel() == 0): 
+            break
+        else:
             # 次の特徴点を用いて今の特徴点を推定する
             p0_b, status_b, err = cv2.calcOpticalFlowPyrLK(gray_ni, gray_i, p1, None, **lk_params)
-            fb_diff = p0 - p0_b
-            p1_opt = p1 + 0.5 * fb_diff # 補正後の次の特徴点
-
-            status = (status_f.ravel() == 1) & (status_b.ravel() == 1) 
+            
+            # 推定ができれば、補正を行う
+            if np.any(status_b.ravel() == 0):
+                p1_opt = p1
+                status = (status_f.ravel() == 1)
+            else:
+                fb_diff = p0 - p0_b
+                p1_opt = p1 + 0.5 * fb_diff
+                status = (status_f.ravel() == 1) & (status_b.ravel() == 1)
+            
             good_new = p1_opt[status == 1]
-            good_old = p0[status == 1]
-        else:
-            good_new = np.array([])
+            good_old = p0[status == 1]          
 
         if len(good_new) == 2:
-            good_new = cv2.cornerSubPix(gray_ni, good_new.reshape(-1, 1, 2), (17, 17), (-1, -1), subpix_criteria).reshape(-1, 2)
+            good_new = cv2.cornerSubPix(gray_ni, good_new.reshape(-1, 1, 2), (19, 19), (-1, -1), subpix_criteria).reshape(-1, 2)
 
             # 2点を結ぶ直線と水平方向の角度を求める
             pt1 = good_new[0].ravel()
@@ -128,32 +134,37 @@ def tracking(input_path):
                 elif diff_angle < -180:
                     diff_angle += 360
 
+                # 角度変化で異常を検知したら終了
+                if diff_angle <= 0 or diff_angle >= 100: 
+                    break
+
                 total_angle += diff_angle
 
             prev_angle = angle
 
-            #cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
-            cv2.putText(img, f"rotations: {abs(total_angle) / 360:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+            cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+            #cv2.putText(img, f"rotations: {abs(total_angle) / 360:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
             #cv2.putText(img, f"rotations/s: {abs(diff_angle) * 1000 / 360:.2f}", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
-                
+
         # マーカーの表示
         for j, (new, old) in enumerate(zip(good_new, good_old)):
             a, b = map(int, new.ravel())
-            c, d = map(int, old.ravel())
-
             img = cv2.circle(img, (a, b), 5, color[j].tolist(), -1)
 
         process.stdin.write(img.tobytes())
-
-        # コマ送りの操作 
-        cv2.waitKey(interval)
 
         # 次のフレームと特徴点の設定
         gray_i = gray_ni.copy()
         p0 = good_new.reshape(-1, 1, 2)
 
+    cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+    cv2.putText(img, f"rotations/s: {abs(total_angle) / 360 / (i - start) * 1000:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+    process.stdin.write(img.tobytes())
+    process.stdin.close()   
+    process.wait()  
+    print("解析完了")
 
 
 if __name__ == '__main__':
-    tracking("faster_capture/output/infinicam_coin_toss_meetingroom_10yen_1000fps.npy")
+    tracking("faster_capture/output/coin3.npy")
 
