@@ -9,10 +9,7 @@
             font-family: sans-serif;
             text-align: center;
         }
-        h1 {
-            color: #0075c1;
-            margin-bottom: 30px;
-        }
+
         .field {
             display: flex;
             justify-content: center;
@@ -66,6 +63,21 @@
                 transform: rotate(90deg);
             }
         }
+
+        h1 {
+            background: #fcfdfd;/*背景色*/
+            color: #0075c1;/*文字色*/
+            padding: 0.5em 0;/*上下の余白*/
+            border-top: solid 3px #0075c1;/*上線*/
+            border-bottom: solid 3px #0075c1;/*下線*/
+            margin-bottom: 30px;
+            }
+        .analyzing-text {
+            visibility: hidden;
+            font-size: 18px;
+            margin-bottom: 4px; /* 文字と矢印の間隔 */
+            }
+        
     </style>
 </head>
 <body>
@@ -87,7 +99,11 @@
         </button>
         <p id="recordingMessage"></p>
     </div>
-    <div class="arrow">＝＞</div>
+    <div>
+        <div class="analyzing-text" id="analyzingText">解析中...</div>
+        <div class="arrow">＝＞</div>
+    </div>
+
     <!-- 録画動画側 -->
     <div class="box">
         <h2>録画動画</h2>
@@ -154,6 +170,8 @@
                 recordButton.textContent = "録画終了";
             } else {
                 recordButton.textContent = "録画開始";
+
+                analyzingText.style.visibility ="visible"
                 // 1秒待ってから録画動画を表示
                 setTimeout(function () {
                     videoPlayer.src =
@@ -166,6 +184,16 @@
             console.error(error);
         }
     }
+
+        const VideoPlayer = document.getElementById("videoPlayer")
+        const analyzingText = document.getElementById("analyzingText")
+
+        videoPlayer.addEventListener("loadeddata", function() {
+            analyzingText.style.visibility ="hidden";
+        });
+
+    
+    
     // 再生速度変更
     function changeSpeed(changeValue) {
         const speedDisplay =
