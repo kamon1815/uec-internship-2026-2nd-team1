@@ -2,7 +2,6 @@ import cv2
 import ffmpeg
 import numpy as np
 import static_ffmpeg
-#from video import Video
 
 class Output:
     def __init__(self, width, height, path):
@@ -175,6 +174,9 @@ INPUT_FILE  = './faster_capture/output/infinicam_coin_toss_meetingroom_10yen_100
 OUTPUT_FILE = './coin_recognition/output/coin_recognition.mp4'
 
 if __name__ == '__main__':
+
+    from video import Video
+
     static_ffmpeg.add_paths()
     video = Video(INPUT_FILE)
     output = Output(video.width, video.height, OUTPUT_FILE)

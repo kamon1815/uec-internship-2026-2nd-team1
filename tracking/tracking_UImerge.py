@@ -21,7 +21,7 @@ def tracking(input_path):
 
     process = (
         ffmpeg
-        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=30)
+        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=10)
         .output(OUTPUT_FILE, vcodec='h264_qsv')
         .overwrite_output()
         .run_async(pipe_stdin=True)
