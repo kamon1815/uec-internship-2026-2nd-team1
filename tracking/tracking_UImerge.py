@@ -10,7 +10,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(parent_dir)
 
 from coin_recognition.video import Video
-from coin_recognition import coin_recognition
+from coin_recognition import coin_recognition_safe_none as coin_recognition
 
 
 def tracking(input_path):
@@ -166,5 +166,5 @@ def tracking(input_path):
 
 
 if __name__ == '__main__':
-    OUTPUT_FILE = "faster_capture/output/coin.npy"
+    OUTPUT_FILE = "faster_capture/output/coin2.npy"
     tracking(OUTPUT_FILE)
