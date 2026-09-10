@@ -174,7 +174,7 @@ def get_bboxes(video):
 
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUT_FILE = ROOT / 'faster_capture/output/coin1.npy'
+INPUT_FILE = ROOT / 'faster_capture/output/coin3.npy'
 OUTPUT_FILE = ROOT / 'coin_recognition/output/coin_recognition.mp4'
 INTERVAL = 1
 
