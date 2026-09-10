@@ -78,6 +78,8 @@
             margin-bottom: 30px;
             }
         .analyzing-text {
+            display: inline-flex;
+            align-items: center;
             text-align: center;
             visibility: hidden;
             font-size: 18px;
@@ -85,12 +87,12 @@
             }
 
         .loader {
-            text-align: right;
-            border: 12px solid #fafafa;
+            display: inline-block;
+            border: 2px solid #fafafa;
             border-radius: 50%;
-            border-top: 12px solid #000; /*バーの色を背景色と同じに*/
-            width: 60px;
-            height: 60px;
+            border-top: 2px solid #000; /*バーの色を背景色と同じに*/
+            width: 18px;
+            height: 18px;
             animation: spin 1s linear infinite;
             }
         @keyframes spin{
@@ -165,7 +167,7 @@
         <p id="recordingMessage"></p>
     </div>
     <div>
-        <div class="analyzing-text" id="analyzingText">解析中...<div class="loader"></div></div>
+        <div class="analyzing-text" id="analyzingText">解析中...<span class="loader"></span></div>
         <div class="arrow">＝＞</div>
     </div>
 
@@ -189,17 +191,21 @@
         <div class="speed-area">
             <p>
                 現在の再生速度：
-                <span id="speedDisplay">1.00</span>倍
+                ×<span id="speedDisplay">1.00</span>
             </p>
             <button
+                class="record-button"
                 type="button"
                 onclick="changeSpeed(-0.25)"
+                style="font-size: 16px; padding: 4px 8px; line-height: 1; width: auto; height: auto;"
             >
                 0.25下げる
             </button>
             <button
+                class="record-button"
                 type="button"
                 onclick="changeSpeed(0.25)"
+                style="font-size: 16px; padding: 4px 8px; line-height: 1; width: auto; height: auto;"
             >
                 0.25上げる
             </button>
