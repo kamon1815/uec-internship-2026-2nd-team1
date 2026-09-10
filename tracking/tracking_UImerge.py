@@ -55,9 +55,12 @@ def tracking(input_path):
     color = np.array([[0, 0, 255], [0, 255, 0]])
 
     bboxes = coin_recognition.get_bboxes(video)
+    if bboxes is None:
+        return False
 
     # 最初と最後のフレーム番号
-    start = min(bboxes.keys()) + 20
+    filtered = [x for x in bboxes.keys() if x <= min(bboxes.keys()) + 20]
+    start = max(filtered)
     end = max(bboxes.keys())
 
     # 最初のフレームの設定
@@ -157,11 +160,14 @@ def tracking(input_path):
         p0 = good_new.reshape(-1, 1, 2)
 
     cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
-    cv2.putText(img, f"rotations/s: {abs(total_angle) / 360 / (i - start) * 1000:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+    speed = abs(total_angle) / 360 / (i - start) * 1000
+    cv2.putText(img, f"rotations/s: {speed:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
     process.stdin.write(img.tobytes())
     process.stdin.close()   
     process.wait()  
     print("解析完了")
+
+    return True, speed
 
 
 
