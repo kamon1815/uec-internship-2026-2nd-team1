@@ -174,7 +174,7 @@ def get_bboxes(video):
 
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUT_FILE = ROOT / 'faster_capture/output/coin3.npy'
+INPUT_FILE = ROOT / 'faster_capture/output/coin4.npy'
 OUTPUT_FILE = ROOT / 'coin_recognition/output/coin_recognition.mp4'
 INTERVAL = 1
 
@@ -192,7 +192,9 @@ def main():
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     output = Output(video.width, video.height, str(OUTPUT_FILE))
     try:
-        for frame in range(0, video.frame_count, INTERVAL):
+
+        for frame in range(min(bboxes.keys()), max(bboxes.keys())):  # range(0, video.frame_count, INTERVAL):
+
             image = cv2.cvtColor(video.get_frame(frame), cv2.COLOR_GRAY2BGR)
             if frame in bboxes:
                 _, _, (x, y, w, h) = bboxes[frame]
