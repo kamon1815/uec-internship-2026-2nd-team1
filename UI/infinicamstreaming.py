@@ -28,11 +28,9 @@ stop_requested = False
 f_count = 0
 start_time = 0.0
 
-import random
 
 def live_stream_loop():
     while not shutdown_event.is_set():
-        print(random.randint(1,6))
         with frame_lock:
             frame = latest_jpeg
         if frame is not None:
@@ -190,6 +188,18 @@ def main():
 
         # decoder.teardownGPUDecode()
         print("終了しました")
+
+
+#保存済みの動画をブラウザに渡すためのURL設定
+@bottle.get('/videos/<filename:path>')
+def download_video(filename):
+    res = bottle.static_file(filename, root=str(BASE_DIR), mimetype='video/mp4')
+    
+    res.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    res.set_header('Pragma', 'no-cache')
+    res.set_header('Expires', '0')
+    
+    return res
 
 if __name__ == '__main__':
     main()
