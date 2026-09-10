@@ -174,7 +174,7 @@ def get_bboxes(video):
 
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUT_FILE = ROOT / 'faster_capture/output/coin4.npy'
+INPUT_FILE  = Path("C:\\Users\\intern03\\AppData\\Local\\Temp\\tmprvhrwrhq.npy")  # ROOT / 'faster_capture/output/coin4.npy'
 OUTPUT_FILE = ROOT / 'coin_recognition/output/coin_recognition.mp4'
 INTERVAL = 1
 
@@ -183,7 +183,8 @@ def main():
     from video import Video
 
     static_ffmpeg.add_paths()
-    video = Video(INPUT_FILE)
+    input_f = open(INPUT_FILE, 'rb')
+    video = Video(input_f)
 
     bboxes = get_bboxes(video)
     if bboxes is None:
@@ -202,6 +203,7 @@ def main():
             output.write_frame(image)
     finally:
         output.close()
+        input_f.close()
 
 if __name__ == '__main__':
     main()

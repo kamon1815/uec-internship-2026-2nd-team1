@@ -145,6 +145,7 @@
         const recordButton =
             document.getElementById("recordButton");
         try {
+            recordButton.textContent = "処理中です...";
             const response =
                 await fetch("/toggle_recording", {
                     method: "POST"
@@ -156,9 +157,7 @@
                 recordButton.textContent = "録画開始";
                 // 1秒待ってから録画動画を表示
                 setTimeout(function () {
-                    videoPlayer.src =
-                        "/videos/recorded_movie.mp4?t="
-                        + Date.now();
+                    videoPlayer.src = "/video/" + result.output_mp4_path + "?t=" + Date.now();
                     videoPlayer.load();
                 }, 1000);
             }

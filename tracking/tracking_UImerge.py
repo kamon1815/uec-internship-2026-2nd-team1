@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 import sys
+import tempfile
 import ffmpeg
 import static_ffmpeg
 static_ffmpeg.add_paths()
@@ -13,16 +14,15 @@ from coin_recognition.video import Video
 from coin_recognition import coin_recognition_safe_none as coin_recognition
 
 
-def tracking(input_path):
+def tracking(input_f, output_path):
 
     # ディレクトリの設定
-    video = Video(input_path)
-    OUTPUT_FILE = './tracking/output/tracking.mp4'
+    video = Video(input_f)
 
     process = (
         ffmpeg
         .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=10)
-        .output(OUTPUT_FILE, vcodec='h264_qsv')
+        .output(output_path, vcodec='h264_qsv')
         .overwrite_output()
         .run_async(pipe_stdin=True)
     )
@@ -56,7 +56,7 @@ def tracking(input_path):
 
     bboxes = coin_recognition.get_bboxes(video)
     if bboxes is None:
-        return False
+        return False, None
 
     # 最初と最後のフレーム番号
     filtered = [x for x in bboxes.keys() if x <= min(bboxes.keys()) + 20]
