@@ -17,6 +17,11 @@
             gap: 25px;
         }
         .box {
+            background: #fcfdfd;/*背景色*/
+            color: #0075c1;/*文字色*/
+            border: solid 3px black;/*線色*/
+            padding: 0.5em;/*文字周りの余白*/
+            border-radius: 0.5em;/*角丸*/
             width: 600px;
         }
         .screen {
@@ -66,25 +71,85 @@
 
         h1 {
             background: #fcfdfd;/*背景色*/
-            color: #0075c1;/*文字色*/
+            color: black;/*文字色*/
             padding: 0.5em 0;/*上下の余白*/
-            border-top: solid 3px #0075c1;/*上線*/
-            border-bottom: solid 3px #0075c1;/*下線*/
+            border-top: solid 3px black;/*上線*/
+            border-bottom: solid 3px black;/*下線*/
             margin-bottom: 30px;
             }
         .analyzing-text {
+            text-align: center;
             visibility: hidden;
             font-size: 18px;
             margin-bottom: 4px; /* 文字と矢印の間隔 */
             }
-        
+
+        .loader {
+            text-align: right;
+            border: 12px solid #fafafa;
+            border-radius: 50%;
+            border-top: 12px solid #000; /*バーの色を背景色と同じに*/
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            }
+        @keyframes spin{
+            0%{
+                transform: rotate(0deg);
+                opacity: 1;/*透明度を１００％*/
+            }
+
+            65%{
+                transform: rotate(180deg);/*開始から65%の段階で半回転(180deg)する。さらに透明度を40%に設定*/
+                opacity: 0.4;
+            }
+
+            100%{
+                transform: rotate(360deg);
+                opacity: 1;
+            }
+            }
+            .pulse {
+                display: inline-block;
+                width: 16px; height: 16px;
+                position: relative;
+                }
+            .pulse .core {
+                position: absolute; inset: 0;
+                background: #f6603b; border-radius: 50%;
+                animation: pCore 1.4s ease-in-out infinite;
+                }
+            .pulse .ring {
+                position: absolute; inset: -7px;
+                border: 2px solid rgb(246, 59, 59);
+                border-radius: 50%;
+                animation: pRing 1.4s ease-out infinite;
+                }
+            @keyframes pCore {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.12); opacity: .7; }
+                }
+            @keyframes pRing {
+                0% { transform: scale(.8); opacity: .7; }
+                100% { transform: scale(1.7); opacity: 0; }
+                }
+
+
     </style>
 </head>
 <body>
 <h1>コイントストラッカー</h1>
 <div class="field">
     <div class="box">
-        <h2>ライブ映像</h2>
+        <h2 style="color: #000;">
+            ライブ映像
+            <span class="pulse">
+                <span class="core"></span>
+                <span class="ring"></span>
+            </span>
+        </h2>
+
+
         <img
             src="/live_stream"
             class="screen"
@@ -100,13 +165,13 @@
         <p id="recordingMessage"></p>
     </div>
     <div>
-        <div class="analyzing-text" id="analyzingText">解析中...</div>
+        <div class="analyzing-text" id="analyzingText">解析中...<div class="loader"></div></div>
         <div class="arrow">＝＞</div>
     </div>
 
     <!-- 録画動画側 -->
     <div class="box">
-        <h2>録画動画</h2>
+        <h2 style="color: #000;">録画動画</h2>
         <div class="file-area">
             <input
                 type="file"
