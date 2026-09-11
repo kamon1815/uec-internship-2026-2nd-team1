@@ -5,6 +5,7 @@ import pathlib
 import threading
 import time
 import ffmpeg
+from bottle import static_file
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
 bottle.TEMPLATE_PATH.append(BASE_DIR / 'views')
@@ -17,6 +18,7 @@ frame_lock = threading.Lock()
 frame_latest = None
 shutdown_event = threading.Event()
 
+#保存先の設定
 path = BASE_DIR / "recorded_movie.mp4"
 vcodec = "h264"
 MAX_SAVE_FRAME_COUNT = 10000
@@ -144,6 +146,16 @@ def main():
 
     finally:
         shutdown_event.set()
+
+#保存済みの動画をブラウザに渡すためのURL設定
+@bottle.get('/videos/<filename:path>')
+def download_video(filename):
+    res = bottle.static_file(filename, root=str(BASE_DIR), mimetype='video/mp4')
     
+    res.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    res.set_header('Pragma', 'no-cache')
+    res.set_header('Expires', '0')
+    
+    return res
 if __name__ == '__main__':
     main()

@@ -1,70 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>コイントスアプリ</title>
-  <style>
-    body{
-      background: #fff9cc;
-      }
-    .btn-border {
-      width: 250px;
-      height: 80px;
-      background: transparent;
-      color: #0075c1;
-      border: 2px solid #0075c1;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      }
+    <meta charset="UTF-8">
+    <title>コイントスアプリ</title>
+    <style>
+        body {
+            background: #fff9cc;
+            font-family: sans-serif;
+            text-align: center;
+        }
 
-    .btn-border:hover {
-      background: #0075c1;
-      color: white;
-      }
-  </style>
+        .field {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+        }
+        .box {
+            background: #fcfdfd;/*背景色*/
+            color: #2c2e30;/*文字色*/
+            border: solid 3px black;/*線色*/
+            padding: 0.5em;/*文字周りの余白*/
+            border-radius: 0.5em;/*角丸*/
+            width: 600px;
+        }
+        .screen {
+            height: 520px;
+            background: black;
+            object-fit: contain;
+        }
 
+        .arrow {
+            font-size: 60px;
+            color: #333;
+        }
+        .record-button {
+            width: 250px;
+            height: 65px;
+            margin-top: 20px;
+            background: white;
+            color: #0075c1;
+            border: 2px solid #0075c1;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .record-button:hover {
+            background: #0075c1;
+            color: white;
+        }
+        .file-area {
+            margin-bottom: 10px;
+        }
+        .speed-area {
+            margin-top: 15px;
+        }
+        .speed-area button {
+            padding: 8px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        @media (max-width: 1300px) {
+            .field {
+                flex-direction: column;
+            }
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        h1 {
+            background: #fcfdfd;/*背景色*/
+            color: black;/*文字色*/
+            padding: 0.5em 0;/*上下の余白*/
+            border-top: solid 3px black;/*上線*/
+            border-bottom: solid 3px black;/*下線*/
+            margin-bottom: 30px;
+            }
+        .analyzing-text {
+            display: inline-flex;
+            align-items: center;
+            text-align: center;
+            visibility: hidden;
+            font-size: 18px;
+            margin-bottom: 4px; /* 文字と矢印の間隔 */
+            }
+
+        .loader {
+            display: inline-block;
+            border: 2px solid #fafafa;
+            border-radius: 50%;
+            border-top: 2px solid #000; /*バーの色を背景色と同じに*/
+            width: 18px;
+            height: 18px;
+            animation: spin 1s linear infinite;
+            }
+        @keyframes spin{
+            0%{
+                transform: rotate(0deg);
+                opacity: 1;/*透明度を１００％*/
+            }
+
+            65%{
+                transform: rotate(180deg);/*開始から65%の段階で半回転(180deg)する。さらに透明度を40%に設定*/
+                opacity: 0.4;
+            }
+
+            100%{
+                transform: rotate(360deg);
+                opacity: 1;
+            }
+            }
+            .pulse {
+                display: inline-block;
+                width: 16px; height: 16px;
+                position: relative;
+                }
+            .pulse .core {
+                position: absolute; inset: 0;
+                background: #f6603b; border-radius: 50%;
+                animation: pCore 1.4s ease-in-out infinite;
+                }
+            .pulse .ring {
+                position: absolute; inset: -7px;
+                border: 2px solid rgb(246, 59, 59);
+                border-radius: 50%;
+                animation: pRing 1.4s ease-out infinite;
+                }
+            @keyframes pCore {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.12); opacity: .7; }
+                }
+            @keyframes pRing {
+                0% { transform: scale(.8); opacity: .7; }
+                100% { transform: scale(1.7); opacity: 0; }
+                }
+
+
+    </style>
 </head>
 <body>
+<h1>コイントストラッカー</h1>
+<div class="field">
+    <div class="box">
+        <h2 style="color: #000;">
+            ライブ映像
+            <span class="pulse">
+                <span class="core"></span>
+                <span class="ring"></span>
+            </span>
+        </h2>
 
-<div style="padding: 30px; text-align: right;">
-    <button type="submit" class="btn-border">ボタン</button>
+
+        <img 
+            src="/live_stream"
+            class="screen"
+        >
+        <button
+            type="button"
+            id="recordButton"
+            class="record-button" 
+            onclick="toggleRecording()"
+        >
+            録画開始
+        </button>
+        <p id="recordingMessage"></p>
+    </div>
+    <div>
+        <div class="analyzing-text" id="analyzingText">解析中...<span class="loader"></span></div>
+        <div class="arrow">＝＞</div>
+    </div>
+
+    <!-- 録画動画側 -->
+    <div class="box">
+        <h2 style="color: #000;">録画動画</h2>
+        <div class="file-area">
+            <input
+                type="file"
+                id="videoFile"
+                accept=".npy"
+            >
+        </div>
+        <video
+            id="videoPlayer"
+            class="screen"
+            controls
+            src="/videos/recorded_movie.mp4"
+        ></video>
+        <div class="speed-area">
+            <p>
+                現在の再生速度：
+                <span id="speedDisplay">1.00</span>
+            </p>
+            <button
+                class="record-button"
+                type="button"
+                onclick="changeSpeed(-0.25)"
+                style="font-size: 16px; padding: 4px 8px; line-height: 1; width: auto; height: auto;"
+            >
+                0.25下げる
+            </button>
+            <button
+                class="record-button"
+                type="button"
+                onclick="changeSpeed(0.25)"
+                style="font-size: 16px; padding: 4px 8px; line-height: 1; width: auto; height: auto;"
+            >
+                0.25上げる
+            </button>
+        </div>
+    </div>
 </div>
-	<video id="test1" width="500" height="300" >
-		<source src="mask.mp4" type="video/mp4">
-	</video>
+<div style="text-align: center;">
+    <h2 class="box" style="color: #000; display: inline-block; text-align: center;">回転スピード： <span id="spin-display-text"></span> 回転/秒</h2>
+</div>
 
-<img src="/live_stream" width="640" style="text-align: left;">
-<button type="button" id="recordButton" class="btn-border" onclick="toggleRecording()">
-  録画開始
-</button>
-<p id="recordingMessage"></p>
 <script>
-async function toggleRecording(){
-  const recordButton = document.getElementById("recordButton");
-  const recordingMessage = document.getElementById("recordingMessage");
+    const videoPlayer = document.getElementById("videoPlayer");
 
-  try{
-    const responce = await fetch("/toggle_recording", {
-      method: "POST"
+    // 選択した動画を表示
+    const npyFile = document.getElementById("videoFile");
+    npyFile.addEventListener("change", async function () {
+        console.log("ok");
+        
+        const selectedFile = this.files[0];
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        const recordButton =
+            document.getElementById("recordButton");
+        try {
+            recordButton.textContent = "解析中です...";
+            analyzingText.style.visibility ="visible"
+            const response =
+                await fetch("/analyze", {
+                    method: "POST",
+                    body: formData
+                });
+            const result = await response.json();
+            analyzingText.style.visibility ="hidden"
+            videoPlayer.src =
+                "/video/" +
+                result.output_mp4_path +
+                "?t=" +
+                Date.now();
+            videoPlayer.load();
+            recordButton.textContent = "録画開始";
+            document.getElementById("spin-display-text").textContent = result.speed
+        } catch (error) {
+        }
     });
 
-    const result = await responce.json();
-
-    if (result.recording){
-        recordButton.textContent = "録画終了";
-        recordingMessage.textContent = "録画中";
-    } else {
-      recordButton.textContent = "録画開始";
-      recordingMessage.textContent = "動画を保存しました";
+    // 録画開始・終了
+    async function toggleRecording() {
+        const recordButton =
+            document.getElementById("recordButton");
+        try {
+            recordButton.textContent = "解析中です...";
+            analyzingText.style.visibility ="visible"
+            const response =
+                await fetch("/toggle_recording", {
+                    method: "POST"
+                });
+            const result = await response.json();
+            analyzingText.style.visibility ="hidden"
+            if (result.recording) {
+                recordButton.textContent = "録画終了";
+            } else {
+                recordButton.textContent = "録画開始";
+                // 1秒待ってから録画動画を表示
+                setTimeout(function () {
+                    videoPlayer.src = "/video/" + result.output_mp4_path + "?t=" + Date.now();
+                    videoPlayer.load();
+                }, 1000);
+                document.getElementById("spin-display-text").textContent = result.speed
+            }
+        } catch (error) {
+            console.error(error);
+        }
     }
-  } catch (error){
-    console.error(error);
-    recordingMessage.textContent = "エラーが発生しました"
-  }
-  }
+
+    const VideoPlayer = document.getElementById("videoPlayer")
+    const analyzingText = document.getElementById("analyzingText")
+
+    videoPlayer.addEventListener("loadeddata", function() {
+        analyzingText.style.visibility ="hidden";
+    });
+
+    // 再生速度変更
+    function changeSpeed(changeValue) {
+        const speedDisplay =
+            document.getElementById("speedDisplay");
+        let newSpeed =
+            videoPlayer.playbackRate + changeValue;
+        newSpeed =
+            Math.max(0.25, Math.min(2, newSpeed));
+        videoPlayer.playbackRate = newSpeed;
+        speedDisplay.textContent = newSpeed.toFixed(2);
+    }
 </script>
 </body>
-
-
 </html>

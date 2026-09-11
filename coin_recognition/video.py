@@ -3,9 +3,9 @@ import numpy as np
 import pypuclib
 
 class Video:
-    def __init__(self, path):
-        self.file = open(path, 'rb')
-        header = np.load(self.file)
+    def __init__(self, f):
+        self.file = f
+        header = np.load(self.file, allow_pickle=False)
         self.framerate = header['framerate'].item()
         self.width, self.height = header['resolution'].tolist()
         self.quantization = header['quantization']
@@ -27,4 +27,3 @@ class Video:
 
     def __del__(self):
         self.get_frame.cache_clear()
-        self.file.close()
