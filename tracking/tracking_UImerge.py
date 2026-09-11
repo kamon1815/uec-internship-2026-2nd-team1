@@ -169,7 +169,7 @@ def tracking(input_f, output_path):
         gray_i = gray_ni.copy()
         p0 = good_new.reshape(-1, 1, 2)
 
-    img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
     img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
