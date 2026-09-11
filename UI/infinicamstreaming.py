@@ -186,9 +186,9 @@ def run_server():
 
 
 
-FPS = 500
+FPS = 1000
 WIDTH = 1246
-HEIGHT = 1024
+HEIGHT = 1008
 
 def main():
     global decoder, reso, GPUStatus, npy_saver
