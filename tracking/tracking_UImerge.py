@@ -21,7 +21,7 @@ def tracking(input_f, output_path):
 
     process = (
         ffmpeg
-        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.height}x{video.width}', framerate=10)
+        .input('pipe:', format='rawvideo', pix_fmt='bgr24', s=f'{video.height}x{video.width}', framerate=10)
         .output(output_path, vcodec='h264_qsv')
         .overwrite_output()
         .run_async(pipe_stdin=True)
@@ -150,10 +150,12 @@ def tracking(input_f, output_path):
             #cv2.putText(img, f"rotations: {abs(total_angle) / 360:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
             #cv2.putText(img, f"rotations/s: {abs(diff_angle) * 1000 / 360:.2f}", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
 
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+
         # マーカーの表示
         for j, (new, old) in enumerate(zip(good_new, good_old)):
             a, b = map(int, new.ravel())
-            img = cv2.circle(img, (a, b), 5, color[j].tolist(), -1)
+            img = cv2.circle(img, (a, b), 8, color[j].tolist(), -1)
 
         img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
@@ -167,6 +169,7 @@ def tracking(input_f, output_path):
         gray_i = gray_ni.copy()
         p0 = good_new.reshape(-1, 1, 2)
 
+    img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
