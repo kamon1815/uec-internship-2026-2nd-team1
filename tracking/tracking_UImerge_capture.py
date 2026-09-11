@@ -96,6 +96,7 @@ def tracking(input_path):
 
         # 特徴点の追跡に失敗したら終了
         if np.any(status_f.ravel() == 0): 
+            print("追跡失敗")
             break
         else:
             # 次の特徴点を用いて今の特徴点を推定する
@@ -135,6 +136,7 @@ def tracking(input_path):
 
                 # 角度変化で異常を検知したら終了
                 if diff_angle <= 0 or diff_angle >= 100: 
+                    print("角度変化異常")
                     break
 
                 total_angle += diff_angle

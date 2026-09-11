@@ -172,7 +172,7 @@ if __name__ == '__main__':
     #    print(f'usage: {__file__} <input_file>')
     #    exit(1)
 
-    OUTPUT_FILE =  './faster_capture/output/coin3.npy'
+    OUTPUT_FILE =  './faster_capture/output/coin2.npy'
 
     #npy_viewer(sys.argv[1])
     npy_viewer(OUTPUT_FILE)

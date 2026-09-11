@@ -32,7 +32,7 @@ def tracking(input_path):
 
     feature_params = dict(
         maxCorners = 2,
-        qualityLevel = 0.001,
+        qualityLevel = 0.000001,
         minDistance = 20,
         blockSize = 11
     )
@@ -50,6 +50,45 @@ def tracking(input_path):
     def process_img(img):
         processed = clahe.apply(img)
         return processed
+
+    def calc(gray_ni, gray_i, p1):
+        # 次の特徴点を用いて今の特徴点を推定する
+        p0_b, status_b, err = cv2.calcOpticalFlowPyrLK(gray_ni, gray_i, p1, None, **lk_params)
+                    
+        # 推定ができれば、補正を行う
+        if np.any(status_b.ravel() == 0):
+            p1_opt = p1
+            status = (status_f.ravel() == 1)
+        else:
+            fb_diff = p0 - p0_b
+            p1_opt = p1 + 0.5 * fb_diff
+            status = (status_f.ravel() == 1) & (status_b.ravel() == 1)
+
+        good_new = p1_opt[status == 1]  
+        good_new = cv2.cornerSubPix(gray_ni, good_new.reshape(-1, 1, 2), (19, 19), (-1, -1), subpix_criteria).reshape(-1, 2)
+        return good_new        
+
+    def calc_angle(good_new, prev_angle):
+        # 2点を結ぶ直線と水平方向の角度を求める
+        pt1 = good_new[0].ravel()
+        pt2 = good_new[1].ravel()
+        
+        dx = pt2[0] - pt1[0]
+        dy = pt2[1] - pt1[1]
+        
+        angle = np.degrees(np.arctan2(dy, dx))
+        
+        if prev_angle is not None:
+            diff_angle = angle - prev_angle
+        
+            if diff_angle > 180:
+                diff_angle -= 360
+            elif diff_angle < -180:
+                diff_angle += 360
+        else:
+            diff_angle = 0
+
+        return angle, diff_angle
 
     # マーカーの色（赤と緑）
     color = np.array([[0, 0, 255], [0, 255, 0]])
@@ -80,8 +119,7 @@ def tracking(input_path):
     # 回転数計測のための変数
     total_angle = 0.0
     prev_angle = None
-    diff_angle = 0.0
-
+    
     #for i in range(start - 100, start):
     #    img = video.get_frame(i)
     #    process.stdin.write(img.tobytes())
@@ -99,58 +137,46 @@ def tracking(input_path):
 
         # 特徴点の追跡に失敗したら終了
         if np.any(status_f.ravel() == 0): 
-            break
-        else:
-            # 次の特徴点を用いて今の特徴点を推定する
-            p0_b, status_b, err = cv2.calcOpticalFlowPyrLK(gray_ni, gray_i, p1, None, **lk_params)
+            print("追跡失敗")
+            _, _, (x, y, w, h) = bboxes[i + 1]
+            x -= 20
+            y -= 20
+            w += 40
+            h += 40 
+            mask_roi = np.zeros_like(gray_ni)
+            mask_roi[y : y + h, x : x + w] = 255
+            p1 = cv2.goodFeaturesToTrack(gray_ni, mask = mask_roi, **feature_params)
+            p1 = cv2.cornerSubPix(gray_ni, p1, (19, 19), (-1, -1), subpix_criteria)
             
-            # 推定ができれば、補正を行う
-            if np.any(status_b.ravel() == 0):
-                p1_opt = p1
-                status = (status_f.ravel() == 1)
-            else:
-                fb_diff = p0 - p0_b
-                p1_opt = p1 + 0.5 * fb_diff
-                status = (status_f.ravel() == 1) & (status_b.ravel() == 1)
-            
-            good_new = p1_opt[status == 1]
-            good_old = p0[status == 1]          
+        good_new = calc(gray_ni, gray_i, p1)
+        angle, diff_angle = calc_angle(good_new, prev_angle)
 
-        if len(good_new) == 2:
-            good_new = cv2.cornerSubPix(gray_ni, good_new.reshape(-1, 1, 2), (19, 19), (-1, -1), subpix_criteria).reshape(-1, 2)
+        # 角度変化で異常を検知したら終了
+        if diff_angle <= 0 or diff_angle >= 100: 
+            print("角度変化異常")
+            _, _, (x, y, w, h) = bboxes[i + 1]
+            x -= 20
+            y -= 20
+            w += 40
+            h += 40 
+            mask_roi = np.zeros_like(gray_ni)
+            mask_roi[y : y + h, x : x + w] = 255
+            p1 = cv2.goodFeaturesToTrack(gray_ni, mask = mask_roi, **feature_params)
+            p1 = cv2.cornerSubPix(gray_ni, p1, (19, 19), (-1, -1), subpix_criteria)
+        
+            good_new = calc(gray_ni, gray_i, p1)
+            angle, diff_angle = calc_angle(good_new, prev_angle)
+        
+        total_angle += diff_angle    
+        prev_angle = angle
 
-            # 2点を結ぶ直線と水平方向の角度を求める
-            pt1 = good_new[0].ravel()
-            pt2 = good_new[1].ravel()
-
-            dx = pt2[0] - pt1[0]
-            dy = pt2[1] - pt1[1]
-
-            angle = np.degrees(np.arctan2(dy, dx))
-
-            if prev_angle is not None:
-                diff_angle = angle - prev_angle
-
-                if diff_angle > 180:
-                    diff_angle -= 360
-                elif diff_angle < -180:
-                    diff_angle += 360
-
-                # 角度変化で異常を検知したら終了
-                if diff_angle <= 0 or diff_angle >= 100: 
-                    break
-
-                total_angle += diff_angle
-
-            prev_angle = angle
-
-            cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
-            #cv2.putText(img, f"rotations: {abs(total_angle) / 360:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
-            #cv2.putText(img, f"rotations/s: {abs(diff_angle) * 1000 / 360:.2f}", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+        cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+        #cv2.putText(img, f"rotations: {abs(total_angle) / 360:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+        cv2.putText(img, f"diff_angle: {diff_angle:.2f}", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
 
         # マーカーの表示
-        for j, (new, old) in enumerate(zip(good_new, good_old)):
-            a, b = map(int, new.ravel())
+        for j, new in enumerate(good_new):
+            a, b = map(int, new.ravel()) 
             img = cv2.circle(img, (a, b), 5, color[j].tolist(), -1)
 
         process.stdin.write(img.tobytes())
@@ -160,6 +186,7 @@ def tracking(input_path):
         p0 = good_new.reshape(-1, 1, 2)
 
     cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+    cv2.putText(img, f"diff_angle: {diff_angle:.2f}", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
     speed = abs(total_angle) / 360 / (i - start) * 1000
     cv2.putText(img, f"rotations/s: {speed:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
     process.stdin.write(img.tobytes())
