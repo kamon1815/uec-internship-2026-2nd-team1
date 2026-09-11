@@ -157,14 +157,21 @@ decoder = None
 reso = None
 GPUStatus = None
 
-xfer_callback_count = 0
 UPDATE_LATEST_FRAME_FREQUENCY = 10  # live_stream_loop の配信速度が30fpsなので、それより少し高い100fpsにする
 
+xfer_callback_count = 0
+old_sequence_no = None
+
 def xfer_callback(xferData):
-    global latest_frame, xfer_callback_count
+    global latest_frame, xfer_callback_count, old_sequence_no
 
     if shutdown_event.is_set():
         return
+
+    sequence_no = xferData.sequenceNo()
+    if sequence_no == old_sequence_no:
+        return
+    old_sequence_no = sequence_no
 
     data = xferData.data()
 
@@ -179,6 +186,7 @@ def xfer_callback(xferData):
     xfer_callback_count += 1
     if xfer_callback_count % UPDATE_LATEST_FRAME_FREQUENCY == 0:
         xfer_callback_count = 0
+
 
 
 def run_server():
