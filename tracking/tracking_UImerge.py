@@ -21,7 +21,7 @@ def tracking(input_f, output_path):
 
     process = (
         ffmpeg
-        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.width}x{video.height}', framerate=10)
+        .input('pipe:', format='rawvideo', pix_fmt='gray', s=f'{video.height}x{video.width}', framerate=10)
         .output(output_path, vcodec='h264_qsv')
         .overwrite_output()
         .run_async(pipe_stdin=True)
@@ -75,6 +75,8 @@ def tracking(input_f, output_path):
 
     # 最初の特徴点の設定
     p0 = cv2.goodFeaturesToTrack(gray_i_start, mask = mask_roi, **feature_params)
+    if p0 is None:
+        return False, 0
     p0 = cv2.cornerSubPix(gray_i_start, p0, (19, 19), (-1, -1), subpix_criteria)
 
     # 回転数計測のための変数
@@ -144,7 +146,7 @@ def tracking(input_f, output_path):
 
             prev_angle = angle
 
-            cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+            # cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
             #cv2.putText(img, f"rotations: {abs(total_angle) / 360:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
             #cv2.putText(img, f"rotations/s: {abs(diff_angle) * 1000 / 360:.2f}", (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
 
@@ -153,21 +155,30 @@ def tracking(input_f, output_path):
             a, b = map(int, new.ravel())
             img = cv2.circle(img, (a, b), 5, color[j].tolist(), -1)
 
+        img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        if len(good_new) == 2:
+            cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+
+
         process.stdin.write(img.tobytes())
 
         # 次のフレームと特徴点の設定
         gray_i = gray_ni.copy()
         p0 = good_new.reshape(-1, 1, 2)
 
+    img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
     cv2.putText(img, f"total_angle: {total_angle:.2f}", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
     speed = abs(total_angle) / 360 / (i - start) * 1000
     cv2.putText(img, f"rotations/s: {speed:.2f}", (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA) 
+
     process.stdin.write(img.tobytes())
     process.stdin.close()   
     process.wait()  
     print("解析完了")
 
-    return True, speed
+    return True, float(speed)
 
 
 

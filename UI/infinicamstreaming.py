@@ -102,14 +102,15 @@ def toggle_recoding():
 
             raw_video.seek(0)
             output_mp4.close()
-            is_success, _ = tracking_UImerge.tracking(raw_video, output_mp4.name)
+            is_success, speed = tracking_UImerge.tracking(raw_video, output_mp4.name)
 
             print(is_success)
             raw_video.close()
             
             return {
                 "recording": False,
-                "output_mp4_path": pathlib.Path(output_mp4.name).name
+                "output_mp4_path": pathlib.Path(output_mp4.name).name,
+                "speed": speed
             }
 
 
@@ -138,14 +139,15 @@ def analyze():
 
     raw_video.seek(0)
     output_mp4.close()
-    is_success, _ = tracking_UImerge.tracking(raw_video, output_mp4.name)
+    is_success, speed = tracking_UImerge.tracking(raw_video, output_mp4.name)
 
     print(is_success)
     raw_video.close()
     
     return {
         "recording": False,
-        "output_mp4_path": pathlib.Path(output_mp4.name).name
+        "output_mp4_path": pathlib.Path(output_mp4.name).name,
+        "speed": speed
     }
 
 

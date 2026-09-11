@@ -461,6 +461,8 @@ def recognize(video, background):
 
 
 def get_bboxes(video):
+    np.random.seed(42)
+
     if video.frame_count <= 0:
         return None
 
