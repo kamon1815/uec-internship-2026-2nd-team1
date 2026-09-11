@@ -95,14 +95,13 @@
             <input
                 type="file"
                 id="videoFile"
-                accept="video/*"
+                accept=".npy"
             >
         </div>
         <video
             id="videoPlayer"
             class="screen"
             controls
-            loop
             src="/videos/recorded_movie.mp4"
         ></video>
         <div class="speed-area">
@@ -126,20 +125,40 @@
     </div>
 </div>
 <script>
-    const videoPlayer =
-        document.getElementById("videoPlayer");
-    const videoFile =
-        document.getElementById("videoFile");
+    const videoPlayer = document.getElementById("videoPlayer");
+
     // 選択した動画を表示
-    videoFile.addEventListener("change", function () {
+    const npyFile = document.getElementById("videoFile");
+    npyFile.addEventListener("change", async function () {
+        console.log("ok");
+        
         const selectedFile = this.files[0];
-        if (selectedFile) {
-            const videoURL =
-                URL.createObjectURL(selectedFile);
-            videoPlayer.src = videoURL;
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        const recordButton =
+            document.getElementById("recordButton");
+        try {
+            recordButton.textContent = "解析中です...";
+            const response =
+                await fetch("/analyze", {
+                    method: "POST",
+                    body: formData
+                });
+            const result = await response.json();
+            videoPlayer.src =
+                "/video/" +
+                result.output_mp4_path +
+                "?t=" +
+                Date.now();
             videoPlayer.load();
+            recordButton.textContent = "解析完了";
+        } catch (error) {
         }
     });
+
     // 録画開始・終了
     async function toggleRecording() {
         const recordButton =

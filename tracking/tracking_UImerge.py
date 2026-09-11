@@ -11,7 +11,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(parent_dir)
 
 from coin_recognition.video import Video
-from coin_recognition import coin_recognition_safe_none as coin_recognition
+from coin_recognition import multi as coin_recognition
 
 
 def tracking(input_f, output_path):
@@ -59,7 +59,7 @@ def tracking(input_f, output_path):
         return False, None
 
     # 最初と最後のフレーム番号
-    filtered = [x for x in bboxes.keys() if x <= min(bboxes.keys()) + 20]
+    filtered = [x for x in bboxes.keys() if x <= min(bboxes.keys()) + 40]
     start = max(filtered)
     end = max(bboxes.keys())
 

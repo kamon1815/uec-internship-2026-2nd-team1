@@ -43,6 +43,8 @@ def live_stream_loop():
             else:
                 array = decoder.decode(frame, reso)
 
+            array = cv2.rotate(array, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
             is_success, encoded_image = cv2.imencode('.jpg', array)
 
             if is_success:
@@ -118,6 +120,35 @@ def video(video_id):
         root=tempfile.gettempdir(),
         mimetype='video/mp4'
     )
+
+
+
+@bottle.post('/analyze')
+def analyze():
+    upload = bottle.request.files.get('file')
+    raw_video = tempfile.NamedTemporaryFile(
+        suffix='.npy',
+        delete=False
+    )
+    upload.save(raw_video.name, overwrite=True)
+    print("before(npy):", raw_video.name)
+
+    output_mp4 = tempfile.NamedTemporaryFile(mode='w+b', suffix='.mp4', delete=False)
+    print("after(mp4): ", output_mp4.name)            
+
+    raw_video.seek(0)
+    output_mp4.close()
+    is_success, _ = tracking_UImerge.tracking(raw_video, output_mp4.name)
+
+    print(is_success)
+    raw_video.close()
+    
+    return {
+        "recording": False,
+        "output_mp4_path": pathlib.Path(output_mp4.name).name
+    }
+
+
 
 
 decoder = None
